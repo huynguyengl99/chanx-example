@@ -1,0 +1,15 @@
+{
+    "include": ["chanx_example"],
+    "typeCheckingMode": "strict",
+    "reportMissingTypeArgument": "warning",
+    "reportMissingTypeStubs": "none",
+    "pythonVersion": "3.11",
+    "reportIncompatibleVariableOverride": "warning",
+    "reportUnknownMemberType": "warning",
+    "executionEnvironments": [
+        {
+            "root": "chanx_example/config/settings",
+            "reportConstantRedefinition": "none"
+        }
+    ]
+}
