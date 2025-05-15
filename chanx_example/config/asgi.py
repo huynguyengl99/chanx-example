@@ -14,16 +14,16 @@ from channels.sessions import CookieMiddleware
 from django.conf import settings
 from django.core.asgi import get_asgi_application
 
-# Due to some uvicorn config we need to put the get_asgi_application before other internal import
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
-django_asgi_app = get_asgi_application()  # isort: skip
+from chanx.routing import include
 
-from config.routing import ws_routers  # noqa
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.dev")
+django_asgi_app = get_asgi_application()
+
 
 routing = {
     "http": django_asgi_app,
     "websocket": OriginValidator(
-        CookieMiddleware(ws_routers),
+        CookieMiddleware(include("config.routing")),
         settings.CORS_ALLOWED_ORIGINS + settings.CSRF_TRUSTED_ORIGINS,
     ),
 }

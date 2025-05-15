@@ -32,6 +32,8 @@ from status.views import StatusView
 
 api_urlpatterns = [
     path("accounts/", include("accounts.urls")),
+    path("chat/", include("chat.urls")),
+    path("playground/", include("chanx.playground.urls")),
     path("status/", StatusView.as_view(), name="status"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path(

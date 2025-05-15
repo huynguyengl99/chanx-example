@@ -10,3 +10,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
     "SERVE_AUTHENTICATION": [],
 }
+
+CHANX = {
+    "SEND_COMPLETION": True,
+}

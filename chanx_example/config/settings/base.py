@@ -79,9 +79,10 @@ THIRD_PARTY_APPS = [
     "dj_rest_auth.registration",
     "channels",
     "django_celery_beat",
+    "chanx.playground",
 ]
 
-LOCAL_APPS = ["accounts"]
+LOCAL_APPS = ["accounts", "assistants", "chat", "discussion"]
 
 EXTRA_APP = ["django_cleanup.apps.CleanupConfig"]
 

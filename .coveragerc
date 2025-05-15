@@ -2,6 +2,7 @@
 branch = True
 source = chanx_example
 omit =
+    chanx_example/accounts/*
     */migrations/*
     */config/*
     */tests/*

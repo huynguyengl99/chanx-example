@@ -1,13 +1,18 @@
 from channels.routing import URLRouter
 
-from chanx.urls import path
+from chanx.routing import include, path
 
-from chat.routing import ws_chat_router
-
-ws_all_router = URLRouter([*ws_chat_router])
-
-ws_routers = URLRouter(
+ws_router = URLRouter(
     [
-        path("ws/", ws_all_router),
+        # Use ws_include which returns a URLRouter
+        path("assistants/", include("assistants.routing")),
+        path("discussion/", include("discussion.routing")),
+        path("chat/", include("chat.routing")),
+    ]
+)
+
+router = URLRouter(
+    [
+        path("ws/", include(ws_router)),
     ]
 )

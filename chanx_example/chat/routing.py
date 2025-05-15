@@ -1,7 +1,11 @@
-from chanx.urls import path
+from channels.routing import URLRouter
 
-from chat.consumers import ChatConsumer
+from chanx.routing import re_path
 
-ws_chat_router = [
-    path("chat/", ChatConsumer.as_asgi()),
-]
+from chat.consumers.chat_detail import ChatDetailConsumer
+
+router = URLRouter(
+    [
+        re_path(r"(?P<pk>\d+)/", ChatDetailConsumer.as_asgi()),
+    ]
+)
