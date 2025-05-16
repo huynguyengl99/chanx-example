@@ -463,3 +463,10 @@ CELERY_RESULT_BACKEND = env.str("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 CELERY_TASK_DEFAULT_QUEUE = "chanx_example_app_worker"
 DJANGO_STRUCTLOG_CELERY_ENABLED = True
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
+
+# =========================================================================
+# AI CONFIGURATION
+# =========================================================================
+
+OPENAI_API_KEY = env.str("OPENAI_API_KEY", "")
+OPENAI_ORG = env.str("OPENAI_ORG", "")

@@ -1,5 +1,5 @@
 from chat.models import GroupChat
-from test_utils.async_factory import BaseModelFactory
+from test_utils.factory import BaseModelFactory
 
 
 class GroupChatFactory(BaseModelFactory[GroupChat]):

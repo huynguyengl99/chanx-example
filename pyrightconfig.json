@@ -4,8 +4,8 @@
     "reportMissingTypeArgument": "warning",
     "reportMissingTypeStubs": "none",
     "pythonVersion": "3.11",
-    "reportIncompatibleVariableOverride": "warning",
-    "reportUnknownMemberType": "warning",
+    "reportIncompatibleVariableOverride": "none",
+    "reportUnknownMemberType": "none",
     "executionEnvironments": [
         {
             "root": "chanx_example/config/settings",

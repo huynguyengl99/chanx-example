@@ -18,6 +18,19 @@ class NewMessage(BaseMessage):
     payload: MessagePayload
 
 
+class StreamingPayload(BaseModel):
+    content: str
+    is_complete: bool = False
+    message_id: str
+
+
+class StreamingMessage(BaseMessage):
+    """Streaming message chunk from assistant."""
+
+    action: Literal["streaming"] = "streaming"
+    payload: StreamingPayload
+
+
 class ReplyMessage(BaseMessage):
     action: Literal["reply"] = "reply"
     payload: MessagePayload

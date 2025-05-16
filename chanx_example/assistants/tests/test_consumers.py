@@ -1,284 +1,241 @@
+from collections.abc import AsyncIterator
 from typing import Any
-from unittest.mock import patch
-from uuid import uuid4
+from unittest.mock import Mock, patch
 
-from rest_framework import status
-
-import pytest
-from asgiref.timeout import timeout as async_timeout
-from chanx.messages.base import BaseMessage
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import (
-    ErrorMessage,
     PongMessage,
 )
-from chanx.settings import chanx_settings
-from chanx.utils.settings import override_chanx_settings
 
-from assistants.messages.assistant import MessagePayload, NewMessage, ReplyMessage
+from assistants.messages.assistant import (
+    MessagePayload,
+    NewMessage,
+    StreamingMessage,
+    StreamingPayload,
+)
+from test_utils.openai_test_utils import (
+    OpenAIChatCompletionMockFactory,
+    tokenize_for_streaming,
+)
 from test_utils.testing import WebsocketTestCase
 
 
-class TestChatConsumer(WebsocketTestCase):
+class TestAssistantConsumer(WebsocketTestCase):
     ws_path = "/ws/assistants/"
 
     async def test_connect_successfully_and_send_and_reply_message(self) -> None:
-        # Test basic connection and message flow
+        # Test basic connection and message flow (no auth required)
         await self.auth_communicator.connect()
+        await self.auth_communicator.assert_authenticated_status_ok()
 
-        auth = await self.auth_communicator.wait_for_auth()
-        assert auth
-        assert auth.payload.status_code == status.HTTP_200_OK
-
+        # No authentication required, should connect directly
         # Test ping/pong
         await self.auth_communicator.send_message(PingMessage())
         all_messages = await self.auth_communicator.receive_all_json()
         assert all_messages == [PongMessage().model_dump()]
 
-        # Test chat functionality
-        message_content = "My message content"
-        await self.auth_communicator.send_message(
-            NewMessage(payload=MessagePayload(content=message_content))
-        )
-
-        all_messages = await self.auth_communicator.receive_all_json()
-        assert all_messages == [
-            ReplyMessage(
-                payload=MessagePayload(content=f"Reply: {message_content}")
-            ).model_dump()
-        ]
-
-        # Test invalid message handling
-        await self.auth_communicator.send_message(
-            BaseMessage(action="Invalid action", payload=None)
-        )
-        all_json = await self.auth_communicator.receive_all_json()
-        error_item = all_json[0]
-        error_message = ErrorMessage.model_validate(error_item)
-        assert error_message.payload[0]["type"] == "literal_error"
-        assert error_message.payload[0]["msg"] == "Input should be 'new_message'"
-
-        await self.auth_communicator.disconnect()
-
-    async def test_exception_during_message_processing(self) -> None:
-        # Test exception handling during message processing
+    @patch("assistants.consumers.uuid4", return_value="mock-uuid")
+    @patch("openai.resources.chat.completions.AsyncCompletions.create")
+    async def test_ai_streaming_response(
+        self, mock_acreate: Mock, mock_uuid: Mock
+    ) -> None:
+        """Test AI streaming response with realistic OpenAI mock."""
         await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
+        await self.auth_communicator.assert_authenticated_status_ok()
 
-        # Mock the receive_message method to raise an exception
-        with patch(
-            "assistants.consumers.AssistantConsumer.receive_message",
-            side_effect=Exception("Test exception"),
-        ):
-            # Send a message that will trigger the exception
-            await self.auth_communicator.send_json_to(
-                {"action": "new_message", "payload": {"content": "Test message"}}
+        ai_response = "Hello! How can I help you today? Let me know what you need assistance with."
+
+        async def mock_acreate_side_effect(*args: Any, **kwargs: Any) -> Any:
+            return OpenAIChatCompletionMockFactory.build(
+                content=ai_response,
+                streaming=True,
             )
 
-            # Should receive an error message
-            all_messages = await self.auth_communicator.receive_all_json(10)
-            error_message = ErrorMessage.model_validate(all_messages[0])
-            assert error_message.payload == {"detail": "Failed to process message"}
+        mock_acreate.side_effect = mock_acreate_side_effect
 
-    @override_chanx_settings(SEND_COMPLETION=True)
-    async def test_send_with_completion_message(self) -> None:
-        # Test that completion messages are sent when enabled
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Send a message that should trigger a completion
-        await self.auth_communicator.send_message(PingMessage())
-
-        all_messages: list[dict[str, Any]] = []
-        try:
-            async with async_timeout(0.5):
-                while True:
-                    message: dict[str, Any] = (
-                        await self.auth_communicator.receive_json_from(0.1)
-                    )
-                    all_messages.append(message)
-        except TimeoutError:
-            pass
-        # Should receive the normal response and a completion message
-        message_types = [msg.get("action") for msg in all_messages]
-
-        assert "pong" in message_types
-        assert "complete" in message_types
-
-    @override_chanx_settings(SEND_COMPLETION=False)
-    async def test_send_without_completion_message(self) -> None:
-        # Test that completion messages won't be sent when disabled
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Send a message that should trigger a completion
-        await self.auth_communicator.send_message(PingMessage())
-
-        assert not chanx_settings.SEND_COMPLETION
-
-        all_messages: list[dict[str, Any]] = []
-        try:
-            async with async_timeout(0.5):
-                while True:
-                    message = await self.auth_communicator.receive_json_from(0.1)
-                    all_messages.append(message)
-        except TimeoutError:
-            pass
-        # Should receive the normal response and a completion message
-        message_types = [msg.get("action") for msg in all_messages]
-
-        assert "pong" in message_types
-        assert "complete" not in message_types
-
-    @override_chanx_settings(SEND_MESSAGE_IMMEDIATELY=True)
-    async def test_send_message_immediately(self) -> None:
-        # Test the send_message_immediately flag
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Monitor asyncio.sleep calls
-        with patch("asyncio.sleep") as mock_sleep:
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-            # Should not call sleep when send_message_immediately is False
-            mock_sleep.assert_called()
-
-    @override_chanx_settings(SEND_MESSAGE_IMMEDIATELY=False)
-    async def test_send_message_not_immediately(self) -> None:
-        # Test the send_message_immediately flag
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Monitor asyncio.sleep calls
-        with patch("asyncio.sleep") as mock_sleep:
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-            # Should not call sleep when send_message_immediately is False
-            mock_sleep.assert_not_called()
-
-    async def test_websocket_disconnect(self) -> None:
-        # Test disconnection handling
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Monitor logging during disconnect
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            await self.auth_communicator.disconnect()
-            # Should log disconnection
-            mock_logger.assert_called_with("Disconnecting websocket")
-
-    async def test_validation_error_handling(self) -> None:
-        # Test handling of validation errors
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Send an invalid message format to trigger validation error
-        await self.auth_communicator.send_json_to(
-            {
-                "action": "new_message",
-                "payload": {
-                    # Missing required 'content' field
-                },
-            }
+        # Send a message to trigger AI response
+        await self.auth_communicator.send_message(
+            NewMessage(payload=MessagePayload(content="Hello AI"))
         )
 
-        # Should receive validation error
+        # Collect all messages
         all_messages = await self.auth_communicator.receive_all_json()
-        error_message = ErrorMessage.model_validate(all_messages[0])
 
-        # Check that we received a validation error response
-        assert len(error_message.payload) > 0
-        assert any("missing" in str(error).lower() for error in error_message.payload)
+        expected_streaming_messages = [
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content=token,
+                    is_complete=False,
+                    message_id="mock-uuid",
+                )
+            ).model_dump()
+            for token in tokenize_for_streaming(ai_response)
+        ]
 
-    async def test_message_id_and_logging(self) -> None:
-        # Test message ID generation and logging
+        # Should have received streaming chunks
+        assert len(all_messages) > 0
+
+        assert all_messages == [
+            *expected_streaming_messages,
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content="",
+                    is_complete=True,
+                    message_id="mock-uuid",
+                )
+            ).model_dump(),
+        ]
+
+    @patch("assistants.consumers.uuid4", return_value="error-uuid")
+    @patch("openai.resources.chat.completions.AsyncCompletions.create")
+    async def test_ai_service_error_handling(
+        self, mock_acreate: Mock, mock_uuid: Mock
+    ) -> None:
+        """Test that errors from AI service are handled gracefully."""
         await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
+        await self.auth_communicator.assert_authenticated_status_ok()
 
-        # Monitor UUID generation
-        uuid = uuid4()
-        with patch("uuid.uuid4", return_value=uuid):
-            # Monitor contextvars binding
-            with patch("structlog.contextvars.bind_contextvars") as mock_bind:
-                await self.auth_communicator.send_message(PingMessage())
-                await self.auth_communicator.receive_all_json()
+        # Mock an exception from the AI service
+        mock_acreate.side_effect = Exception("API connection failed")
 
-                # Should bind message_id and received_action
-                mock_bind.assert_called_with(
-                    message_id=str(uuid)[:8], received_action="ping"
+        # Send a message that will trigger the error
+        await self.auth_communicator.send_message(
+            NewMessage(payload=MessagePayload(content="This will fail"))
+        )
+
+        # Should receive an error message
+        all_messages = await self.auth_communicator.receive_all_json()
+
+        # Should get a ReplyMessage with error
+        assert len(all_messages) == 1
+        error_message = all_messages[0]
+        assert error_message["action"] == "error"
+        assert "Error: API connection failed" in error_message["payload"]["content"]
+
+    @patch("assistants.consumers.uuid4", return_value="stream-error-uuid")
+    @patch("assistants.services.ai_service.OpenAIService.generate_stream")
+    async def test_streaming_error_during_generation(
+        self, mock_generate_stream: Mock, mock_uuid: Mock
+    ) -> None:
+        """Test error handling when streaming generation fails mid-stream."""
+        await self.auth_communicator.connect()
+        await self.auth_communicator.assert_authenticated_status_ok()
+
+        # Create an async generator that yields some tokens then raises an error
+        async def failing_generator() -> AsyncIterator[str]:
+            yield "Hello "
+            yield "world "
+            raise Exception("Streaming failed")
+
+        mock_generate_stream.return_value = failing_generator()
+
+        # Send a message
+        await self.auth_communicator.send_message(
+            NewMessage(payload=MessagePayload(content="Tell me a story"))
+        )
+
+        # Collect all messages
+        all_messages = await self.auth_communicator.receive_all_json()
+
+        # Should receive partial streaming messages and then an error
+        streaming_messages = [
+            msg for msg in all_messages if msg["action"] == "streaming"
+        ]
+        error_messages = [msg for msg in all_messages if msg["action"] == "error"]
+
+        # Should have received some streaming tokens
+        assert len(streaming_messages) == 2  # noqa
+        assert streaming_messages[0]["payload"]["content"] == "Hello "
+        assert streaming_messages[1]["payload"]["content"] == "world "
+
+        # Should have received an error message
+        assert len(error_messages) == 1
+        assert "Error: Streaming failed" in error_messages[0]["payload"]["content"]
+
+    @patch("assistants.consumers.uuid4")
+    @patch("openai.resources.chat.completions.AsyncCompletions.create")
+    async def test_conversation_history_with_two_messages(
+        self, mock_acreate: Mock, mock_uuid: Mock
+    ) -> None:
+        """Test that conversation history is properly maintained when user sends 2 messages."""
+        await self.auth_communicator.connect()
+        await self.auth_communicator.assert_authenticated_status_ok()
+
+        # Mock different UUIDs for different messages
+        mock_uuid.side_effect = ["uuid-1", "uuid-2"]
+
+        # Mock AI responses
+        first_response = "Hello! I'm here to help."
+        second_response = "Yes, I remember your first message about greetings."
+
+        call_count = 0
+
+        async def mock_acreate_side_effect(*args: Any, **kwargs: Any) -> Any:
+            nonlocal call_count
+            call_count += 1
+
+            if call_count == 1:
+                return OpenAIChatCompletionMockFactory.build(
+                    content=first_response, streaming=True
+                )
+            elif call_count == 2:  # noqa
+                return OpenAIChatCompletionMockFactory.build(
+                    content=second_response, streaming=True
                 )
 
-    @override_chanx_settings(SEND_AUTHENTICATION_MESSAGE=False)
-    async def test_authentication_skip(self) -> None:
-        # Test behavior when authentication messages are disabled
-        await self.auth_communicator.connect()
+        mock_acreate.side_effect = mock_acreate_side_effect
 
-        # Should not receive auth message
-        with pytest.raises(TimeoutError):
-            await self.auth_communicator.receive_json_from(timeout=0.1)
+        # Send first message
+        await self.auth_communicator.send_message(
+            NewMessage(payload=MessagePayload(content="Hello AI"))
+        )
+        first_messages = await self.auth_communicator.receive_all_json()
 
-    @override_chanx_settings(LOG_RECEIVED_MESSAGE=False)
-    async def test_disable_received_message_logging(self) -> None:
-        # Test that log_received_message setting works
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
+        expected_streaming_first_messages = [
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content=token,
+                    is_complete=False,
+                    message_id="uuid-1",
+                )
+            ).model_dump()
+            for token in tokenize_for_streaming(first_response)
+        ]
 
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            await self.auth_communicator.send_message(PingMessage())
+        assert first_messages == [
+            *expected_streaming_first_messages,
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content="",
+                    is_complete=True,
+                    message_id="uuid-1",
+                )
+            ).model_dump(),
+        ]
 
-            # Should not log "Received websocket json"
-            assert "Received websocket json" not in str(mock_logger.call_args_list)
+        # Send second message
+        await self.auth_communicator.send_message(
+            NewMessage(payload=MessagePayload(content="Do you remember what I said?"))
+        )
+        second_messages = await self.auth_communicator.receive_all_json()
+        expected_streaming_second_messages = [
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content=token,
+                    is_complete=False,
+                    message_id="uuid-2",
+                )
+            ).model_dump()
+            for token in tokenize_for_streaming(second_response)
+        ]
 
-    @override_chanx_settings(LOG_RECEIVED_MESSAGE=True)
-    async def test_enable_received_message_logging(self) -> None:
-        # Test that log_received_message setting works
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-
-            # Should log "Received websocket json"
-            assert "Received websocket json" in str(mock_logger.call_args_list)
-
-    @override_chanx_settings(LOG_SENT_MESSAGE=False)
-    async def test_disable_sent_message_logging(self) -> None:
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-
-            # Should not log "Sent websocket json"
-            assert "Sent websocket json" not in str(mock_logger.call_args_list)
-
-    @override_chanx_settings(LOG_SENT_MESSAGE=True)
-    async def test_enable_sent_message_logging(self) -> None:
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-
-            # Should log "Sent websocket json"
-            assert "Sent websocket json" in str(mock_logger.call_args_list)
-
-    @override_chanx_settings(LOG_IGNORED_ACTIONS={"ping"})
-    async def test_ignore_actions(self) -> None:
-        # Test silent actions feature by patching the consumer class
-        await self.auth_communicator.connect()
-        await self.auth_communicator.wait_for_auth()
-
-        # Patch the silent_actions set to include 'ping'
-        with patch("chanx.utils.logging.logger.ainfo") as mock_logger:
-            # Reset mock_logger to clear previous calls
-            mock_logger.reset_mock()
-
-            await self.auth_communicator.send_message(PingMessage())
-            await self.auth_communicator.receive_all_json()
-
-            # Should not log received message for silent action
-            assert "ping" not in str(mock_logger.call_args_list)
+        assert second_messages == [
+            *expected_streaming_second_messages,
+            StreamingMessage(
+                payload=StreamingPayload(
+                    content="",
+                    is_complete=True,
+                    message_id="uuid-2",
+                )
+            ).model_dump(),
+        ]

@@ -135,5 +135,10 @@ class User(AbstractUser):
     USERNAME_FIELD = "email"
     REQUIRED_FIELDS = []
 
+    if TYPE_CHECKING:
+        from chat.models import GroupChat
+
+        chat_groups: QuerySet[GroupChat]
+
     def __str__(self) -> str:
         return str(self.email)
