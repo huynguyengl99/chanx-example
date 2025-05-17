@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from django.db import models
@@ -19,8 +20,17 @@ class GroupChat(models.Model):
         related_name="chat_groups",
         through="chat.ChatMember",
     )
+    created_at = models.DateTimeField[datetime, datetime](auto_now_add=True)
+    updated_at = models.DateTimeField[datetime, datetime](auto_now=True)
 
     members: QuerySet[ChatMember]
 
     class Meta(TypedModelMeta):
-        pass
+        ordering = ["-updated_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+    def update_last_activity(self) -> None:
+        """Update the last activity timestamp."""
+        self.save(update_fields=["updated_at"])

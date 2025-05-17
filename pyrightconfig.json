@@ -5,6 +5,7 @@
     "reportMissingTypeStubs": "none",
     "pythonVersion": "3.11",
     "reportIncompatibleVariableOverride": "none",
+    "reportIncompatibleMethodOverride": "none",
     "reportUnknownMemberType": "none",
     "executionEnvironments": [
         {

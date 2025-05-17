@@ -273,7 +273,7 @@ REST_AUTH = {
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
 ACCOUNT_SIGNUP_FIELDS = ["email*", "password1*", "password2*"]
 ACCOUNT_LOGIN_METHODS = {"email"}
-ACCOUNT_EMAIL_VERIFICATION = "mandatory"
+ACCOUNT_EMAIL_VERIFICATION = "none"
 
 # =========================================================================
 # API DOCUMENTATION CONFIGURATION
@@ -453,6 +453,10 @@ CHANNEL_LAYERS = {
             "hosts": [REDIS_HOST],
         },
     },
+}
+
+CHANX = {
+    "CAMELIZE": True,
 }
 # =========================================================================
 # CELERY CONFIGURATION

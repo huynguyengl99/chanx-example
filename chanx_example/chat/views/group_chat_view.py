@@ -20,7 +20,7 @@ class GroupChatViewSet(ModelViewSet[GroupChat]):
 
     def get_queryset(self) -> QuerySet[GroupChat]:
         request = cast(AuthenticatedRequest, self.request)
-        return request.user.chat_groups.order_by("-modified").all()
+        return request.user.chat_groups.order_by("-updated_at").all()
 
     def perform_create(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, serializer: BaseSerializer[GroupChat]

@@ -433,6 +433,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/1b/54/4b823e25a5b1ddc87c946e9bc856fe9296f09612e6c97208bb42a15c7014/chanx-0.9.0-py3-none-any.whl", hash = "sha256:ac3c52c05e8d06ea6f72fd5d40309208add605a8131587e75e76ac30a11f2f78", size = 60850 },
 ]
 
+[package.optional-dependencies]
+camel-case = [
+    { name = "pyhumps" },
+]
+
 [[package]]
 name = "chanx-example"
 version = "0.0.1"
@@ -441,7 +446,7 @@ dependencies = [
     { name = "celery" },
     { name = "channels" },
     { name = "channels-redis" },
-    { name = "chanx" },
+    { name = "chanx", extra = ["camel-case"] },
     { name = "dj-rest-auth", extra = ["with-social"] },
     { name = "django" },
     { name = "django-anymail" },
@@ -506,7 +511,7 @@ requires-dist = [
     { name = "celery", specifier = ">=5.5.0,<6" },
     { name = "channels", specifier = ">=4.2.2,<5" },
     { name = "channels-redis", specifier = ">=4.2.1,<5" },
-    { name = "chanx", specifier = ">=0.9.0" },
+    { name = "chanx", extras = ["camel-case"], specifier = ">=0.9.0" },
     { name = "dj-rest-auth", extras = ["with-social"], specifier = ">=7.0.1,<8" },
     { name = "django", specifier = ">=5.1,<6" },
     { name = "django-anymail", specifier = ">=13.0,<14" },
@@ -2975,6 +2980,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/7c/2d/c3338d48ea6cc0feb8446d8e6937e1408088a72a39937982cc6111d17f84/pygments-2.19.1.tar.gz", hash = "sha256:61c16d2a8576dc0649d9f39e089b5f02bcd27fba10d8fb4dcc28173f7a45151f", size = 4968581 }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8a/0b/9fcc47d19c48b59121088dd6da2488a49d5f72dacf8262e2790a1d2c7d15/pygments-2.19.1-py3-none-any.whl", hash = "sha256:9ea1544ad55cecf4b8242fab6dd35a93bbce657034b0611ee383099054ab6d8c", size = 1225293 },
+]
+
+[[package]]
+name = "pyhumps"
+version = "3.8.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/83/fa6f8fb7accb21f39e8f2b6a18f76f6d90626bdb0a5e5448e5cc9b8ab014/pyhumps-3.8.0.tar.gz", hash = "sha256:498026258f7ee1a8e447c2e28526c0bea9407f9a59c03260aee4bd6c04d681a3", size = 9018 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/9e/11/a1938340ecb32d71e47ad4914843775011e6e9da59ba1229f181fef3119e/pyhumps-3.8.0-py3-none-any.whl", hash = "sha256:060e1954d9069f428232a1adda165db0b9d8dfdce1d265d36df7fbff540acfd6", size = 6095 },
 ]
 
 [[package]]

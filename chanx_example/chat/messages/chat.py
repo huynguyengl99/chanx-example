@@ -20,14 +20,5 @@ class ReplyChatMessage(BaseMessage):
     payload: MessagePayload
 
 
-class JoinGroupPayload(BaseModel):
-    group_name: str
-
-
-class JoinGroupMessage(BaseMessage):
-    action: Literal["join_group"] = "join_group"
-    payload: JoinGroupPayload
-
-
 class ChatIncomingMessage(BaseIncomingMessage):
-    message: NewChatMessage | PingMessage | JoinGroupMessage
+    message: NewChatMessage | PingMessage

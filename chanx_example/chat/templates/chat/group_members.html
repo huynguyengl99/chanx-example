@@ -1,0 +1,98 @@
+{% extends "chat/base.html" %}
+
+{% block title %}{{ group_chat.title }} - Members{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h2>{{ group_chat.title }} - Members</h2>
+
+            <div class="mb-4">
+                <a href="{% url 'chat-group-detail' group_chat.pk %}" class="btn btn-secondary">Back to Chat</a>
+            </div>
+
+            {% if messages %}
+            <div class="messages mb-4">
+                {% for message in messages %}
+                <div
+                    class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% if can_manage %}
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Add New Member</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'group_members' group_chat.pk %}">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <input type="email" name="email" class="form-control" placeholder="Enter email"
+                                       required>
+                            </div>
+                            <div class="col-md-4">
+                                <select name="role" class="form-select">
+                                    <option value="{{ roles.ADMIN }}">Admin</option>
+                                    <option value="{{ roles.MEMBER }}" selected>Member</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100">Add Member</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">Members ({{ members|length }})</h5>
+                </div>
+                <div class="card-body p-0">
+                    <table class="table table-striped mb-0">
+                        <thead>
+                        <tr>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for member in members %}
+                        <tr>
+                            <td>{{ member.user.email }}</td>
+                            <td>
+                                {% if member.chat_role == roles.OWNER %}
+                                <span class="badge bg-danger">Owner</span>
+                                {% elif member.chat_role == roles.ADMIN %}
+                                <span class="badge bg-warning text-dark">Admin</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Member</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if can_manage and member.chat_role != roles.OWNER and member.user.id != user_member.user.id %}
+                                <a href="{% url 'remove_member' group_chat.pk member.pk %}"
+                                   class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Are you sure you want to remove this member?')">
+                                    Remove
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
