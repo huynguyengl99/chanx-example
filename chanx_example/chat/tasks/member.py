@@ -10,7 +10,7 @@ from chat.utils import name_group_chat
 channel_layer = get_channel_layer()
 
 
-def task_handle_new_group_chat_member(user_id: int, group_chat_id: int) -> None:
+def task_handle_new_group_member(user_id: int, group_chat_id: int) -> None:
     """
     Handle adding a new member to a group chat.
 
@@ -31,7 +31,10 @@ def task_handle_new_group_chat_member(user_id: int, group_chat_id: int) -> None:
         # Get the group chat channel name
         chat_group = name_group_chat(group_chat_id)
 
-        assert channel_layer
+        if not channel_layer:
+            return
+
+        # Send notification to the specific group chat members
         async_to_sync(channel_layer.group_send)(
             chat_group,
             {
@@ -41,12 +44,15 @@ def task_handle_new_group_chat_member(user_id: int, group_chat_id: int) -> None:
                 },
             },
         )
+
+        # Note: We don't send WebSocket notifications for group list updates here.
+        # The UI will use API calls for that.
     except (User.DoesNotExist, GroupChat.DoesNotExist, ChatMember.DoesNotExist):
         # Log error or handle gracefully
         pass
 
 
-def task_handle_remove_group_chat_member(user_id: int, group_chat_id: int) -> None:
+def task_handle_remove_group_member(user_id: int, group_chat_id: int) -> None:
     """
     Handle removing a member from a group chat.
 
@@ -55,13 +61,16 @@ def task_handle_remove_group_chat_member(user_id: int, group_chat_id: int) -> No
         group_chat_id: The group chat ID
     """
     try:
-        GroupChat.objects.get(id=group_chat_id)
+        group_chat = GroupChat.objects.get(id=group_chat_id)
         user = User.objects.get(id=user_id)
 
         # Get the group chat channel name
         chat_group = name_group_chat(group_chat_id)
 
-        assert channel_layer
+        if not channel_layer:
+            return
+
+        # Send notification to the specific group chat members
         async_to_sync(channel_layer.group_send)(
             chat_group,
             {
@@ -72,32 +81,9 @@ def task_handle_remove_group_chat_member(user_id: int, group_chat_id: int) -> No
                 },
             },
         )
+
+        # Note: The removed user will be redirected away from the chat
+        # and the group list will update via API call, not WebSocket.
     except (User.DoesNotExist, GroupChat.DoesNotExist):
-        # Log error or handle gracefully
-        pass
-
-
-def task_handle_delete_group_chat(group_chat_id: int) -> None:
-    """
-    Handle deleting a group chat.
-
-    Args:
-        group_chat_id: The group chat ID to delete
-    """
-    try:
-        # Get the group chat channel name
-        chat_group = name_group_chat(group_chat_id)
-
-        assert channel_layer
-        async_to_sync(channel_layer.group_send)(
-            chat_group,
-            {
-                "type": "notify_group_deleted",
-                "payload": {
-                    "group_chat_id": group_chat_id,
-                },
-            },
-        )
-    except Exception:
         # Log error or handle gracefully
         pass

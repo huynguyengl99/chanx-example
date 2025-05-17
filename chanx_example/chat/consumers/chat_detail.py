@@ -9,7 +9,7 @@ from chat.messages.chat import (
     ChatIncomingMessage,
     NewChatMessage,
 )
-from chat.messages.group import MemberMessage, OutgoingGroupMessage
+from chat.messages.member import MemberMessage, OutgoingMemberMessage
 from chat.models import ChatMember, ChatMessage, GroupChat
 from chat.permissions import IsGroupChatMember
 from chat.serializers import ChatMessageSerializer
@@ -47,7 +47,7 @@ class ChatDetailConsumer(AsyncJsonWebsocketConsumer[GroupChat]):
     """WebSocket consumer for group chat details."""
 
     INCOMING_MESSAGE_SCHEMA = ChatIncomingMessage
-    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingGroupMessage
+    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingMemberMessage
     permission_classes = [IsGroupChatMember]
     queryset = GroupChat.objects.get_queryset()
 

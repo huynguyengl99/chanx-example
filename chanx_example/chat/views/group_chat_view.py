@@ -8,7 +8,7 @@ from rest_framework.viewsets import ModelViewSet
 from chat.models import ChatMember, GroupChat
 from chat.permissions import ReadOnlyMemberOrOwner
 from chat.serializers import GroupChatSerializer
-from chat.tasks import task_handle_new_group_chat_member
+from chat.tasks import task_handle_group_chat_update, task_handle_new_group_member
 from utils.request import AuthenticatedRequest
 
 
@@ -29,6 +29,7 @@ class GroupChatViewSet(ModelViewSet[GroupChat]):
 
         request = cast(AuthenticatedRequest, self.request)
 
+        # Create chat member for the creator
         ChatMember.objects.create(
             user=request.user,
             group_chat=group_chat,
@@ -36,4 +37,15 @@ class GroupChatViewSet(ModelViewSet[GroupChat]):
             chat_role=ChatMember.ChatMemberRole.OWNER,
         )
 
-        task_handle_new_group_chat_member(request.user.pk, group_chat.pk)
+        # Trigger tasks to handle WebSocket notifications
+        task_handle_new_group_member(request.user.pk, group_chat.pk)
+
+        # Also notify about the new group chat
+        task_handle_group_chat_update(group_chat.pk)
+
+    def perform_update(self, serializer: BaseSerializer[GroupChat]) -> None:
+        """Handle group chat updates and notify members via WebSockets."""
+        group_chat = serializer.save()
+
+        # Notify all members about the update
+        task_handle_group_chat_update(group_chat.pk)
