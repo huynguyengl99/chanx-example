@@ -18,8 +18,8 @@ from chat.permissions import (
     IsGroupChatMember,
 )
 from chat.tasks import (
-    task_handle_new_group_chat_member,
-    task_handle_remove_group_chat_member,
+    task_handle_new_group_member,
+    task_handle_remove_group_member,
 )
 from utils.request import AuthenticatedRequest
 
@@ -99,7 +99,7 @@ class GroupMemberManagementView(APIView):
             )
 
             # Trigger task to handle WebSocket notification
-            task_handle_new_group_chat_member(user.pk, group_chat.pk)
+            task_handle_new_group_member(user.pk, group_chat.pk)
 
             self.add_message(
                 request, messages.SUCCESS, f"Added {user.email} to the group chat"
@@ -147,7 +147,7 @@ class RemoveMemberView(APIView):
         member_to_remove.delete()
 
         # Trigger task to handle WebSocket notification
-        task_handle_remove_group_chat_member(user_id, group_chat.pk)
+        task_handle_remove_group_member(user_id, group_chat.pk)
 
         self.add_message(
             request, messages.SUCCESS, f"Removed {user_email} from the group chat"

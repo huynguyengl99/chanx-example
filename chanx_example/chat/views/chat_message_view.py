@@ -37,4 +37,6 @@ class ChatMessageViewSet(ModelViewSet[ChatMessage]):
         message = serializer.save(group_chat=group_chat, sender=member)
 
         # Trigger the task to broadcast via WebSocket
-        task_handle_new_chat_message(message.pk)  # Use pk instead of id
+        # Note: This task already includes updating the group chat timestamp
+        # and broadcasting the update to the group_chat_updates channel
+        task_handle_new_chat_message(message.pk)

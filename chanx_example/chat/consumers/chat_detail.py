@@ -9,7 +9,7 @@ from chat.messages.chat import (
     ChatIncomingMessage,
     NewChatMessage,
 )
-from chat.messages.group import MemberMessage, OutgoingGroupMessage
+from chat.messages.member import MemberMessage, OutgoingMemberMessage
 from chat.models import ChatMember, ChatMessage, GroupChat
 from chat.permissions import IsGroupChatMember
 from chat.serializers import ChatMessageSerializer
@@ -47,12 +47,11 @@ class ChatDetailConsumer(AsyncJsonWebsocketConsumer[GroupChat]):
     """WebSocket consumer for group chat details."""
 
     INCOMING_MESSAGE_SCHEMA = ChatIncomingMessage
-    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingGroupMessage
+    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingMemberMessage
     permission_classes = [IsGroupChatMember]
     queryset = GroupChat.objects.get_queryset()
 
     member: ChatMember
-    groups: list[str]
 
     async def build_groups(self) -> list[str]:
         """Build the list of groups to join."""
@@ -119,14 +118,26 @@ class ChatDetailConsumer(AsyncJsonWebsocketConsumer[GroupChat]):
         """
         # Extract the payload
         payload = event["payload"]
+        removed_user_id = payload.get("user_id")
 
         # Check if the removed user is the current user
-        if self.user and str(self.user.pk) == str(payload["user_id"]):
+        if self.user and str(self.user.pk) == str(removed_user_id):
+            # Send notification to client to redirect
+            await self.send_json(
+                {
+                    "action": "user_removed_from_group",
+                    "payload": {
+                        "redirect": "/api/chat/page/",  # Redirect to home page
+                        "message": "You have been removed from this group chat",
+                    },
+                }
+            )
+
             # Close the connection
             await self.close()
             return
 
-        # Send the notification to the WebSocket client
+        # If it's another user being removed, just notify
         await self.send_json(
             {
                 "action": "member_removed",

@@ -12,7 +12,7 @@
                 </div>
                 <div class="list-group list-group-flush">
                     {% for chat in user_chats %}
-                    <a href="{% url 'chat-group-detail' chat.id %}" class="list-group-item list-group-item-action {% if chat.id == group_chat.id %}active{% endif %}">
+                    <a href="{% url 'chat-group-detail' chat.pk %}" class="list-group-item list-group-item-action {% if chat.id == group_chat.pk %}active{% endif %}">
                         {{ chat.title }}
                     </a>
                     {% empty %}
@@ -72,7 +72,7 @@
 {% block extra_js %}
 <script>
     // Current group chat ID
-    const groupId = {{ group_chat.id }};
+    const groupId = {{ group_chat.pk }};
 
     // WebSocket connection
     let socket;
@@ -123,8 +123,36 @@
             const data = JSON.parse(event.data);
 
             // Handle different types of messages
-            if (data.action === 'member_message') {
-                addMessageToUI(data.payload, data.isMine);
+            switch (data.action) {
+                case 'member_message':
+                    addMessageToUI(data.payload, data.isMine);
+                    break;
+
+                case 'user_removed_from_group':
+                    // Store notification for the home page
+                    sessionStorage.setItem('chat_notification',
+                        data.payload.message || 'You have been removed from this group chat.');
+
+                    // Redirect to home page
+                    window.location.href = data.payload.redirect || '/api/chat/page/';
+                    break;
+
+                case 'member_added':
+                    showNotification(`New member added: ${data.payload.member?.user || 'Unknown'}`, 'info');
+                    break;
+
+                case 'member_removed':
+                    showNotification(`Member removed: ${data.payload.email || 'Unknown'}`, 'info');
+                    break;
+
+                case 'group_deleted':
+                    sessionStorage.setItem('chat_notification', 'This group has been deleted.');
+                    window.location.href = '/api/chat/page/';
+                    break;
+
+                case 'authentication':
+                    // Authentication message - could handle differently if needed
+                    break;
             }
         };
     }

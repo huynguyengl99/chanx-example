@@ -52,8 +52,9 @@
             {% endif %}
 
             <div class="card">
-                <div class="card-header">
+                <div class="card-header d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0">Members ({{ members|length }})</h5>
+                    <span id="connectionStatus" class="badge bg-warning">Connecting...</span>
                 </div>
                 <div class="card-body p-0">
                     <table class="table table-striped mb-0">
@@ -64,9 +65,9 @@
                             <th>Actions</th>
                         </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="membersList">
                         {% for member in members %}
-                        <tr>
+                        <tr data-member-id="{{ member.pk }}">
                             <td>{{ member.user.email }}</td>
                             <td>
                                 {% if member.chat_role == roles.OWNER %}
@@ -78,9 +79,9 @@
                                 {% endif %}
                             </td>
                             <td>
-                                {% if can_manage and member.chat_role != roles.OWNER and member.user.id != user_member.user.id %}
+                                {% if can_manage and member.chat_role != roles.OWNER and member.user.pk != user_member.user.id %}
                                 <a href="{% url 'remove_member' group_chat.pk member.pk %}"
-                                   class="btn btn-sm btn-danger"
+                                   class="btn btn-sm btn-danger remove-btn"
                                    onclick="return confirm('Are you sure you want to remove this member?')">
                                     Remove
                                 </a>
@@ -95,4 +96,105 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Group chat ID
+    const groupId = {{ group_chat.pk }};
+
+    // WebSocket connection
+    let socket;
+
+    // DOM elements
+    const connectionStatus = document.getElementById('connectionStatus');
+    const membersList = document.getElementById('membersList');
+
+    document.addEventListener('DOMContentLoaded', () => {
+        // Connect WebSocket
+        connectWebSocket();
+    });
+
+    // Connect WebSocket - using the same connection as the chat detail page
+    function connectWebSocket() {
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}/ws/chat/${groupId}/`;
+
+        socket = new WebSocket(wsUrl);
+
+        socket.onopen = () => {
+            connectionStatus.textContent = 'Connected';
+            connectionStatus.className = 'badge bg-success';
+        };
+
+        socket.onclose = () => {
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.className = 'badge bg-danger';
+
+            // Try to reconnect after 5 seconds
+            setTimeout(connectWebSocket, 5000);
+        };
+
+        socket.onerror = (error) => {
+            console.error('WebSocket error:', error);
+            connectionStatus.textContent = 'Connection Error';
+            connectionStatus.className = 'badge bg-danger';
+        };
+
+        socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+
+            // Handle different message types
+            switch (data.action) {
+                case 'member_added':
+                    // Reload page to show new member
+                    window.location.reload();
+                    break;
+
+                case 'member_removed':
+                    // Handle member removal
+                    handleMemberRemoved(data.payload);
+                    break;
+
+                case 'user_removed_from_group':
+                    // Current user was removed - redirect to home
+                    sessionStorage.setItem('chat_notification',
+                        data.payload.message || 'You have been removed from this group chat.');
+                    window.location.href = data.payload.redirect || '/api/chat/page/';
+                    break;
+
+                case 'group_deleted':
+                    // Group was deleted - redirect to home
+                    sessionStorage.setItem('chat_notification', 'This group has been deleted.');
+                    window.location.href = '/api/chat/page/';
+                    break;
+            }
+        };
+    }
+
+    // Handle member removed notification
+    function handleMemberRemoved(payload) {
+        if (!payload || !payload.user_id) return;
+
+        // Check if it's the current user who was removed
+        // This is a fallback - main handling is in the user_removed_from_group case
+        if (payload.is_current_user) {
+            sessionStorage.setItem('chat_notification', 'You have been removed from this group.');
+            window.location.href = '/api/chat/page/';
+            return;
+        }
+
+        // Otherwise, show notification and reload to update the member list
+        showNotification(`Member removed: ${payload.email || 'A member'}`, 'info');
+
+        // Option 1: Reload the page to refresh the member list
+        window.location.reload();
+
+        // Option 2: Remove the member from the UI directly without page reload
+        // const memberRow = document.querySelector(`tr[data-member-id="${payload.member_id}"]`);
+        // if (memberRow) {
+        //     memberRow.remove();
+        // }
+    }
+</script>
 {% endblock %}
