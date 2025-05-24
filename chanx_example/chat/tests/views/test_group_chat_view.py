@@ -1,8 +1,9 @@
 from django.urls import reverse
 from rest_framework import status
 
+from chat.factories.chat_member import ChatMemberFactory
 from chat.factories.group_chat import GroupChatFactory
-from chat.models import ChatMember, GroupChat
+from chat.models import GroupChat
 from test_utils.auth_api_test_case import AuthAPITestCase
 
 
@@ -20,16 +21,8 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         group_chat2 = GroupChatFactory.create(title="Chat 2")
 
         # Add the user to these group chats
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat1,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
-        )
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat2,
-            chat_role=ChatMember.ChatMemberRole.MEMBER,
-        )
+        ChatMemberFactory.create_owner(user=self.user, group_chat=group_chat1)
+        ChatMemberFactory.create(user=self.user, group_chat=group_chat2)
 
         # Create a group chat that the user is not a member of
         GroupChatFactory.create(title="Not My Chat")
@@ -68,18 +61,14 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         assert chat.title == "New Test Chat"
 
         # Verify the user was added as an owner
-        member = ChatMember.objects.get(group_chat=chat, user=self.user)
-        assert member.chat_role == ChatMember.ChatMemberRole.OWNER
+        member = chat.members.get(user=self.user)
+        assert member.chat_role == member.ChatMemberRole.OWNER
 
     def test_update_group_chat(self) -> None:
         """Test updating a group chat."""
         # Create a group chat owned by the authenticated user
         group_chat = GroupChatFactory.create(title="Original Title")
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
-        )
+        ChatMemberFactory.create_owner(user=self.user, group_chat=group_chat)
 
         # URL for the detail view
         detail_url = reverse("groupchat-detail", kwargs={"pk": group_chat.pk})
@@ -105,11 +94,7 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         group_chat = GroupChatFactory.create(
             title="Original Title", description="Original description"
         )
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
-        )
+        ChatMemberFactory.create_owner(user=self.user, group_chat=group_chat)
 
         # URL for the detail view
         detail_url = reverse("groupchat-detail", kwargs={"pk": group_chat.pk})
@@ -135,11 +120,7 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         """Test deleting a group chat."""
         # Create a group chat owned by the authenticated user
         group_chat = GroupChatFactory.create()
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
-        )
+        ChatMemberFactory.create_owner(user=self.user, group_chat=group_chat)
 
         # URL for the detail view
         detail_url = reverse("groupchat-detail", kwargs={"pk": group_chat.pk})
@@ -171,11 +152,7 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         """Test that a non-owner cannot update a group chat."""
         # Create a group chat where the authenticated user is only a member (not owner)
         group_chat = GroupChatFactory.create()
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat,
-            chat_role=ChatMember.ChatMemberRole.MEMBER,
-        )
+        ChatMemberFactory.create(user=self.user, group_chat=group_chat)
 
         # URL for the detail view
         detail_url = reverse("groupchat-detail", kwargs={"pk": group_chat.pk})
@@ -193,11 +170,7 @@ class GroupChatViewSetTestCase(AuthAPITestCase):
         """Test that a non-owner cannot delete a group chat."""
         # Create a group chat where the authenticated user is only a member (not owner)
         group_chat = GroupChatFactory.create()
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat,
-            chat_role=ChatMember.ChatMemberRole.MEMBER,
-        )
+        ChatMemberFactory.create(user=self.user, group_chat=group_chat)
 
         # URL for the detail view
         detail_url = reverse("groupchat-detail", kwargs={"pk": group_chat.pk})

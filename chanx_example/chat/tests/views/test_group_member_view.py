@@ -5,6 +5,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from accounts.factories.user import UserFactory
+from chat.factories.chat_member import ChatMemberFactory
 from chat.factories.group_chat import GroupChatFactory
 from chat.models import ChatMember
 from test_utils.auth_api_test_case import AuthAPITestCase
@@ -18,10 +19,8 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
 
         # Create a group chat that the user is an admin of
         self.group_chat = GroupChatFactory.create(title="Test Chat")
-        self.chat_member = ChatMember.objects.create(
-            user=self.user,
-            group_chat=self.group_chat,
-            chat_role=ChatMember.ChatMemberRole.ADMIN,
+        self.chat_member = ChatMemberFactory.create_admin(
+            user=self.user, group_chat=self.group_chat
         )
 
         # URL for the members management page
@@ -217,18 +216,14 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
 
         # Create a group chat that the user is an admin of
         self.group_chat = GroupChatFactory.create(title="Test Chat")
-        self.chat_member = ChatMember.objects.create(
-            user=self.user,
-            group_chat=self.group_chat,
-            chat_role=ChatMember.ChatMemberRole.ADMIN,
+        self.chat_member = ChatMemberFactory.create_admin(
+            user=self.user, group_chat=self.group_chat
         )
 
         # Create another user as a regular member
         self.other_user = UserFactory.create(email="other@mail.com")
-        self.other_member = ChatMember.objects.create(
-            user=self.other_user,
-            group_chat=self.group_chat,
-            chat_role=ChatMember.ChatMemberRole.MEMBER,
+        self.other_member = ChatMemberFactory.create(
+            user=self.other_user, group_chat=self.group_chat
         )
 
         # URL for removing the member
@@ -273,10 +268,8 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         """Test that a regular member cannot remove other members."""
         # Create a third user as an admin
         admin_user = UserFactory.create(email="admin@mail.com")
-        admin_member = ChatMember.objects.create(
-            user=admin_user,
-            group_chat=self.group_chat,
-            chat_role=ChatMember.ChatMemberRole.ADMIN,
+        admin_member = ChatMemberFactory.create_admin(
+            user=admin_user, group_chat=self.group_chat
         )
 
         # Change the current user's role to regular member
@@ -302,10 +295,8 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         """Test that even an admin cannot remove an owner."""
         # Create an owner
         owner_user = UserFactory.create(email="owner@mail.com")
-        owner_member = ChatMember.objects.create(
-            user=owner_user,
-            group_chat=self.group_chat,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
+        owner_member = ChatMemberFactory.create_owner(
+            user=owner_user, group_chat=self.group_chat
         )
 
         # URL for removing the owner

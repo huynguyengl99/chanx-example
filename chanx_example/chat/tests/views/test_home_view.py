@@ -4,8 +4,9 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from rest_framework import status
 
+from chat.factories.chat_member import ChatMemberFactory
 from chat.factories.group_chat import GroupChatFactory
-from chat.models import ChatMember, GroupChat
+from chat.models import GroupChat
 from test_utils.auth_api_test_case import AuthAPITestCase
 
 
@@ -22,17 +23,9 @@ class HomeViewTestCase(AuthAPITestCase):
         group_chat1 = GroupChatFactory.create(title="Chat 1")
         group_chat2 = GroupChatFactory.create(title="Chat 2")
 
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat1,
-            chat_role=ChatMember.ChatMemberRole.OWNER,
-        )
+        ChatMemberFactory.create_owner(user=self.user, group_chat=group_chat1)
 
-        ChatMember.objects.create(
-            user=self.user,
-            group_chat=group_chat2,
-            chat_role=ChatMember.ChatMemberRole.MEMBER,
-        )
+        ChatMemberFactory.create(user=self.user, group_chat=group_chat2)
 
         # Make the request
         response = self.auth_client.get(self.url)
@@ -86,8 +79,8 @@ class HomeViewTestCase(AuthAPITestCase):
         )
 
         # Verify the user is an owner of the chat
-        member = ChatMember.objects.get(group_chat=chat, user=self.user)
-        assert member.chat_role == ChatMember.ChatMemberRole.OWNER
+        member = chat.members.get(user=self.user)
+        assert member.chat_role == member.ChatMemberRole.OWNER
 
     def test_post_create_chat_unauthenticated(self) -> None:
         """Test that an unauthenticated user cannot create a new chat."""
