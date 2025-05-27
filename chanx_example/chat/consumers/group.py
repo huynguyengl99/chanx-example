@@ -1,11 +1,10 @@
 from typing import Any, TypedDict
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
-from chanx.messages.base import BaseMessage
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
 
-from chat.messages.group import GroupChatIncomingMessage
+from chat.messages.group import GroupChatMessage
 from chat.messages.member import OutgoingMemberMessage
 from chat.utils import make_user_groups_layer_name
 
@@ -23,7 +22,9 @@ class GroupChatUpdateEvent(TypedDict):
     payload: GroupChatUpdatePayload
 
 
-class GroupChatConsumer(AsyncJsonWebsocketConsumer):
+class GroupChatConsumer(
+    AsyncJsonWebsocketConsumer[GroupChatMessage, None, OutgoingMemberMessage]
+):
     """
     WebSocket consumer for group chat updates.
 
@@ -31,9 +32,6 @@ class GroupChatConsumer(AsyncJsonWebsocketConsumer):
     - Notifications when a group chat receives new messages (timestamp updates)
     - Notifications when user is added/removed from groups
     """
-
-    INCOMING_MESSAGE_SCHEMA = GroupChatIncomingMessage
-    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingMemberMessage
 
     async def build_groups(self) -> list[str]:
         """
@@ -49,7 +47,7 @@ class GroupChatConsumer(AsyncJsonWebsocketConsumer):
         # Just join the user's personal notification group
         return [make_user_groups_layer_name(self.user.pk)]
 
-    async def receive_message(self, message: BaseMessage, **kwargs: Any) -> None:
+    async def receive_message(self, message: GroupChatMessage, **kwargs: Any) -> None:
         """Handle incoming WebSocket messages."""
         match message:
             case PingMessage():

@@ -4,12 +4,11 @@ from uuid import uuid4
 from rest_framework.permissions import AllowAny
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
-from chanx.messages.base import BaseMessage
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import ErrorMessage, PongMessage
 
 from assistants.messages.assistant import (
-    AssistantIncomingMessage,
+    AssistantMessage,
     MessagePayload,
     NewMessage,
     StreamingMessage,
@@ -18,11 +17,10 @@ from assistants.messages.assistant import (
 from assistants.services.ai_service import ConversationMessage, OpenAIService
 
 
-class AssistantConsumer(AsyncJsonWebsocketConsumer):
+class AssistantConsumer(AsyncJsonWebsocketConsumer[AssistantMessage]):
     """Websocket to chat with AI assistant with streaming support."""
 
     authentication_classes = []
-    INCOMING_MESSAGE_SCHEMA = AssistantIncomingMessage
     permission_classes = [AllowAny]
 
     log_ignored_actions = {"streaming"}
@@ -32,7 +30,7 @@ class AssistantConsumer(AsyncJsonWebsocketConsumer):
         self.openai_service = OpenAIService()
         self.conversation_history: list[ConversationMessage] = []
 
-    async def receive_message(self, message: BaseMessage, **kwargs: Any) -> None:
+    async def receive_message(self, message: AssistantMessage, **kwargs: Any) -> None:
         match message:
             case PingMessage():
                 # Reply with a PONG message
@@ -40,10 +38,6 @@ class AssistantConsumer(AsyncJsonWebsocketConsumer):
             case NewMessage(payload=new_message_payload):
                 # Generate streaming AI response
                 await self._handle_ai_message(new_message_payload)
-            case (
-                _
-            ):  # pragma: no cover # thanks to pydantic discriminated union, this code is never reach
-                pass
 
     async def _handle_ai_message(self, payload: MessagePayload) -> None:
         """Handle AI message with streaming response."""

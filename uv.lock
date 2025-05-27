@@ -415,7 +415,7 @@ wheels = [
 
 [[package]]
 name = "chanx"
-version = "0.9.0"
+version = "0.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "channels" },
@@ -428,9 +428,9 @@ dependencies = [
     { name = "structlog" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/27/fd/0658b4a26fa9ac55a9e5cbdbede458513251ec9d5cde74d06a5b089f13b5/chanx-0.9.0.tar.gz", hash = "sha256:f171d967ba5f1a22bdeef6ae463d7631767481b31bd2b99bb3227a5dd9807fdf", size = 47271 }
+sdist = { url = "https://files.pythonhosted.org/packages/8f/95/77721338db6aa737028a2e87b2453cec8773e683ae3f616440f4169b3fd5/chanx-0.10.0.tar.gz", hash = "sha256:54e8f59bc7fb4ae5a18c2228917a60978917a64b650616f92b20fb63a6d21565", size = 47567 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1b/54/4b823e25a5b1ddc87c946e9bc856fe9296f09612e6c97208bb42a15c7014/chanx-0.9.0-py3-none-any.whl", hash = "sha256:ac3c52c05e8d06ea6f72fd5d40309208add605a8131587e75e76ac30a11f2f78", size = 60850 },
+    { url = "https://files.pythonhosted.org/packages/42/5c/accc4a5306159f62bf9ef46f80298d4c2be7fe0f75729e7caba1b48e0201/chanx-0.10.0-py3-none-any.whl", hash = "sha256:2470b69f3b45a09f807e72a6a079d2c3465c77749f5c43274523b918dcbb7f42", size = 60935 },
 ]
 
 [package.optional-dependencies]
@@ -511,7 +511,7 @@ requires-dist = [
     { name = "celery", specifier = ">=5.5.0,<6" },
     { name = "channels", specifier = ">=4.2.2,<5" },
     { name = "channels-redis", specifier = ">=4.2.1,<5" },
-    { name = "chanx", extras = ["camel-case"], specifier = ">=0.9.0" },
+    { name = "chanx", extras = ["camel-case"], specifier = ">=0.10.0" },
     { name = "dj-rest-auth", extras = ["with-social"], specifier = ">=7.0.1,<8" },
     { name = "django", specifier = ">=5.1,<6" },
     { name = "django-anymail", specifier = ">=13.0,<14" },

@@ -1,6 +1,6 @@
 from typing import Literal
 
-from chanx.messages.base import BaseIncomingMessage, BaseMessage
+from chanx.messages.base import BaseMessage
 from chanx.messages.incoming import PingMessage
 from pydantic import BaseModel
 
@@ -18,7 +18,4 @@ class GroupChatRefreshRequest(BaseMessage):
     payload: GroupChatRefreshPayload
 
 
-class GroupChatIncomingMessage(BaseIncomingMessage):
-    """Incoming message schema for group chat consumer."""
-
-    message: GroupChatRefreshRequest | PingMessage
+GroupChatMessage = GroupChatRefreshRequest | PingMessage

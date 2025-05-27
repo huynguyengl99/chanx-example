@@ -1,7 +1,6 @@
 from typing import Any, TypedDict, cast
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
-from chanx.messages.base import BaseMessage
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
 
@@ -43,11 +42,13 @@ class GroupDeletedEvent(TypedDict):
     payload: GroupDeletedPayload
 
 
-class ChatDetailConsumer(AsyncJsonWebsocketConsumer[GroupChat]):
+class ChatDetailConsumer(
+    AsyncJsonWebsocketConsumer[
+        ChatIncomingMessage, None, OutgoingMemberMessage, GroupChat
+    ]
+):
     """WebSocket consumer for group chat details."""
 
-    INCOMING_MESSAGE_SCHEMA = ChatIncomingMessage
-    OUTGOING_GROUP_MESSAGE_SCHEMA = OutgoingMemberMessage
     permission_classes = [IsGroupChatMember]
     queryset = GroupChat.objects.get_queryset()
 
@@ -65,7 +66,9 @@ class ChatDetailConsumer(AsyncJsonWebsocketConsumer[GroupChat]):
         assert self.obj
         self.member = await self.obj.members.select_related("user").aget(user=self.user)
 
-    async def receive_message(self, message: BaseMessage, **kwargs: Any) -> None:
+    async def receive_message(
+        self, message: ChatIncomingMessage, **kwargs: Any
+    ) -> None:
         """Handle incoming WebSocket messages."""
         match message:
             case PingMessage():
