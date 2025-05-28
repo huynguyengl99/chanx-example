@@ -97,7 +97,7 @@ class ChatDetailConsumer(
             await self.send_message(
                 UserRemovedFromGroupMessage(
                     payload=UserRemovedFromGroupMessage.Payload(
-                        redirect="/api/chat/page/",
+                        redirect="/chat/",
                         message="You have been removed from this group chat",
                     )
                 )

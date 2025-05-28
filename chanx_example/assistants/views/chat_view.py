@@ -1,14 +1,18 @@
-from typing import Any
+from django.http import HttpRequest
+from rest_framework.permissions import AllowAny
+from rest_framework.renderers import TemplateHTMLRenderer
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from django.views.generic import TemplateView
 
-
-class AssistantChatView(TemplateView):
+class AssistantChatView(APIView):
     """View for the assistant chat interface."""
 
+    renderer_classes = [TemplateHTMLRenderer]
     template_name = "assistants/chat.html"
+    permission_classes = [AllowAny]
 
-    def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
-        context = super().get_context_data(**kwargs)
-        # Add any additional context if needed
-        return context
+    def get(self, request: HttpRequest) -> Response:
+        """Handle GET requests to display the home page."""
+
+        return Response({}, template_name=self.template_name)

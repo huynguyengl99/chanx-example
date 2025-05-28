@@ -33,7 +33,6 @@ from status.views import StatusView
 api_urlpatterns = [
     path("accounts/", include("accounts.urls")),
     path("chat/", include("chat.urls")),
-    path("assistants/", include("assistants.urls")),
     path("playground/", include("chanx.playground.urls")),
     path("status/", StatusView.as_view(), name="status"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
@@ -57,6 +56,8 @@ api_urlpatterns = [
 
 urlpatterns = [
     path("", RedirectView.as_view(url="admin/")),
+    path("assistants/", include("assistants.web_urls")),
+    path("chat/", include("chat.web_urls")),
     path("admin/", admin.site.urls),
     path("api/", include(api_urlpatterns)),  # type: ignore
 ]

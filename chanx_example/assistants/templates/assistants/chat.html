@@ -515,7 +515,7 @@
             handleMessage(data) {
                 switch (data.action) {
                     case 'authentication':
-                        if (data.payload.status_code === 200) {
+                        if (data.payload.statusCode === 200) {
                             this.updateConnectionStatus('Connected', 'green');
                         } else {
                             this.updateConnectionStatus('Authentication Failed', 'red');

@@ -160,7 +160,7 @@
                     // Current user was removed - redirect to home
                     sessionStorage.setItem('chat_notification',
                         data.payload.message || 'You have been removed from this group chat.');
-                    window.location.href = data.payload.redirect || '/api/chat/page/';
+                    window.location.href = data.payload.redirect || '/chat/';
                     break;
 
             }
@@ -175,7 +175,7 @@
         // This is a fallback - main handling is in the user_removed_from_group case
         if (payload.is_current_user) {
             sessionStorage.setItem('chat_notification', 'You have been removed from this group.');
-            window.location.href = '/api/chat/page/';
+            window.location.href = '/chat/';
             return;
         }
 
