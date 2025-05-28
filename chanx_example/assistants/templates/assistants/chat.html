@@ -536,12 +536,12 @@
             }
 
             handleStreamingMessage(payload) {
-                const { content, is_complete, message_id } = payload;
+                const { content, isComplete, messageId } = payload;
 
-                if (!is_complete) {
+                if (!isComplete) {
                     // If this is a new message or different message ID
-                    if (!this.currentStreamingElement || this.currentMessageId !== message_id) {
-                        this.currentMessageId = message_id;
+                    if (!this.currentStreamingElement || this.currentMessageId !== messageId) {
+                        this.currentMessageId = messageId;
                         this.currentStreamingMessage = '';
                         this.currentStreamingElement = this.createStreamingMessage();
                     }
