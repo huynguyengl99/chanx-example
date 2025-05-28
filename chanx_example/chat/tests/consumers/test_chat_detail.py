@@ -1,3 +1,4 @@
+import sys
 from typing import Any
 from unittest.mock import patch
 
@@ -16,6 +17,9 @@ from chat.messages.chat import (
 )
 from chat.models import ChatMember, ChatMessage, GroupChat
 from test_utils.testing import WebsocketTestCase
+
+if sys.version_info < (3, 11):  # pragma: no cover
+    from asyncio.exceptions import TimeoutError
 
 
 class TestChatDetailConsumer(WebsocketTestCase):

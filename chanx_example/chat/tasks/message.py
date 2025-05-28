@@ -2,8 +2,8 @@ from typing import Any, cast
 
 from channels.layers import get_channel_layer
 
-from asgiref.sync import async_to_sync
-
+from chat.consumers.chat_detail import ChatDetailConsumer
+from chat.messages.chat import NewChatMessageEvent
 from chat.models import ChatMessage
 from chat.serializers import ChatMessageSerializer
 from chat.utils import name_group_chat
@@ -44,29 +44,16 @@ def task_handle_new_chat_message(message_id: int) -> None:
         chat_group = name_group_chat(group_chat.pk)
 
         # Send the message to the specific group chat members
-        async_to_sync(channel_layer.group_send)(
+        ChatDetailConsumer.send_channel_event(
             chat_group,
-            {
-                "type": "send_group_member",
-                "content": {"action": "member_message", "payload": serialized_data},
-                "kind": "json",
-                "exclude_current": False,
-                "from_channel": "",
-                "from_user_pk": message.sender.user.pk if message.sender else None,
-            },
+            NewChatMessageEvent(
+                payload=NewChatMessageEvent.Payload(
+                    user_pk=message.sender.user.pk if message.sender else None,
+                    message_data=serialized_data,
+                )
+            ),
         )
 
-        # Also notify about the group chat update for the list
-        async_to_sync(channel_layer.group_send)(
-            "group_chat_updates",
-            {
-                "type": "notify_group_chat_updated",
-                "payload": {
-                    "group_pk": group_chat.pk,
-                    "updated_at": group_chat.updated_at.isoformat(),
-                },
-            },
-        )
     except (ChatMessage.DoesNotExist, Exception):
         # Log error or handle gracefully
         pass

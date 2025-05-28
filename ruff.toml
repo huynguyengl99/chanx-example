@@ -1,5 +1,5 @@
 src = ["chanx_example"]
-target-version = "py311"
+target-version = "py310"
 
 [lint]
 ignore = [

@@ -163,11 +163,6 @@
                     window.location.href = data.payload.redirect || '/api/chat/page/';
                     break;
 
-                case 'group_deleted':
-                    // Group was deleted - redirect to home
-                    sessionStorage.setItem('chat_notification', 'This group has been deleted.');
-                    window.location.href = '/api/chat/page/';
-                    break;
             }
         };
     }

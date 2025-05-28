@@ -1,7 +1,7 @@
 from channels.layers import get_channel_layer
 
-from asgiref.sync import async_to_sync
-
+from chat.consumers.group import GroupChatConsumer
+from chat.messages.group import GroupChatUpdatePayload, NotifyGroupChatUpdateEvent
 from chat.models import GroupChat
 
 channel_layer = get_channel_layer()
@@ -24,16 +24,17 @@ def task_handle_group_chat_update(group_chat_id: int) -> None:
             return
 
         # Broadcast to the group_chat_updates group
-        async_to_sync(channel_layer.group_send)(
+
+        GroupChatConsumer.send_channel_event(
             "group_chat_updates",
-            {
-                "type": "notify_group_chat_updated",
-                "payload": {
-                    "group_pk": group_chat.pk,
-                    "updated_at": group_chat.updated_at.isoformat(),
-                },
-            },
+            NotifyGroupChatUpdateEvent(
+                payload=GroupChatUpdatePayload(
+                    group_pk=group_chat.pk,
+                    updated_at=group_chat.updated_at.isoformat(),
+                )
+            ),
         )
+
     except GroupChat.DoesNotExist:
         # Log error or handle gracefully
         pass

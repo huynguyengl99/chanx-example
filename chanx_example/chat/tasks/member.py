@@ -1,8 +1,18 @@
 from channels.layers import get_channel_layer
 
-from asgiref.sync import async_to_sync
-
 from accounts.models import User
+from chat.consumers.chat_detail import ChatDetailConsumer
+from chat.consumers.group import GroupChatConsumer
+from chat.messages.chat import (
+    MemberRemovedPayload,
+    NotifyMemberAddedEvent,
+    NotifyMemberRemovedEvent,
+)
+from chat.messages.group import (
+    GroupRemovePayload,
+    NotifyAddedToGroupEvent,
+    NotifyRemovedFromGroupEvent,
+)
 from chat.models import ChatMember, GroupChat
 from chat.serializers import GroupChatSerializer, ManageChatMemberSerializer
 from chat.utils import make_user_groups_layer_name, name_group_chat
@@ -34,22 +44,21 @@ def task_handle_new_group_member(user_id: int, group_chat_id: int) -> None:
 
         # 1. Notify the added user through their personal channel
         user_group = make_user_groups_layer_name(user_id)
-        async_to_sync(channel_layer.group_send)(
+        GroupChatConsumer.send_channel_event(
             user_group,
-            {
-                "type": "notify_added_to_group",
-                "payload": group_serializer.data,
-            },
+            NotifyAddedToGroupEvent(
+                payload=group_serializer.data,  # pyright: ignore[reportUnknownArgumentType]
+            ),
         )
 
         # 2. Notify the chat detail page (for users already viewing that page)
         chat_group = name_group_chat(group_chat_id)
-        async_to_sync(channel_layer.group_send)(
+
+        ChatDetailConsumer.send_channel_event(
             chat_group,
-            {
-                "type": "notify_member_added",
-                "payload": {"member": member_serializer.data},
-            },
+            NotifyMemberAddedEvent(
+                payload=member_serializer.data  # pyright: ignore[reportUnknownArgumentType]
+            ),
         )
     except Exception:
         # Log error or handle gracefully
@@ -74,41 +83,35 @@ def task_handle_remove_group_member(user_id: int, group_chat_id: int) -> None:
 
         # 1. Notify the removed user through their personal channel
         user_group = make_user_groups_layer_name(user_id)
-        async_to_sync(channel_layer.group_send)(
+        GroupChatConsumer.send_channel_event(
             user_group,
-            {
-                "type": "notify_removed_from_group",
-                "payload": {
-                    "group_pk": group_chat_id,
-                    "group_title": group_chat.title,
-                },
-            },
+            NotifyRemovedFromGroupEvent(
+                payload=GroupRemovePayload(
+                    group_pk=group_chat.pk, group_title=group_chat.title
+                ),
+            ),
         )
 
         # 2. Also notify the chat detail page (for other users viewing that page)
         chat_group = name_group_chat(group_chat_id)
-        async_to_sync(channel_layer.group_send)(
+        ChatDetailConsumer.send_channel_event(
             chat_group,
-            {
-                "type": "notify_member_removed",
-                "payload": {
-                    "user_id": user_id,
-                    "email": user.email,
-                },
-            },
+            NotifyMemberRemovedEvent(
+                payload=MemberRemovedPayload(
+                    user_pk=user_id,
+                    email=user.email,
+                )
+            ),
         )
     except (GroupChat.DoesNotExist, User.DoesNotExist):
         # Even if objects don't exist, still try to notify the user if possible
         try:
             user_group = make_user_groups_layer_name(user_id)
-            async_to_sync(channel_layer.group_send)(
+            GroupChatConsumer.send_channel_event(
                 user_group,
-                {
-                    "type": "notify_removed_from_group",
-                    "payload": {
-                        "group_pk": group_chat_id,
-                    },
-                },
+                NotifyRemovedFromGroupEvent(
+                    payload=GroupRemovePayload(group_pk=group_chat_id, group_title=""),
+                ),
             )
         except Exception:
             pass

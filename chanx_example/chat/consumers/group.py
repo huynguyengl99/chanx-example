@@ -1,29 +1,25 @@
-from typing import Any, TypedDict
+from typing import Any
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
 
-from chat.messages.group import GroupChatMessage
+from chat.messages.group import (
+    AddedToGroupMessage,
+    GroupChatEvent,
+    GroupChatMessage,
+    GroupChatUpdatedMessage,
+    NotifyAddedToGroupEvent,
+    NotifyGroupChatUpdateEvent,
+    NotifyRemovedFromGroupEvent,
+    RemovedFromGroupMessage,
+)
 from chat.messages.member import OutgoingMemberMessage
 from chat.utils import make_user_groups_layer_name
 
 
-class GroupChatUpdatePayload(TypedDict):
-    """Payload for group chat update notifications."""
-
-    group_pk: int
-    updated_at: str
-
-
-class GroupChatUpdateEvent(TypedDict):
-    """Event for group chat update notifications."""
-
-    payload: GroupChatUpdatePayload
-
-
 class GroupChatConsumer(
-    AsyncJsonWebsocketConsumer[GroupChatMessage, None, OutgoingMemberMessage]
+    AsyncJsonWebsocketConsumer[GroupChatMessage, GroupChatEvent, OutgoingMemberMessage]
 ):
     """
     WebSocket consumer for group chat updates.
@@ -45,7 +41,7 @@ class GroupChatConsumer(
 
         assert self.user.pk
         # Just join the user's personal notification group
-        return [make_user_groups_layer_name(self.user.pk)]
+        return [make_user_groups_layer_name(self.user.pk), "group_chat_updates"]
 
     async def receive_message(self, message: GroupChatMessage, **kwargs: Any) -> None:
         """Handle incoming WebSocket messages."""
@@ -55,26 +51,12 @@ class GroupChatConsumer(
             case _:
                 pass
 
-    async def notify_added_to_group(self, event: dict[str, Any]) -> None:
-        """Handle notification when user is added to a group chat."""
-        # Send notification to refresh UI
-        await self.send_json({"action": "added_to_group", "payload": event["payload"]})
-
-    async def notify_removed_from_group(self, event: dict[str, Any]) -> None:
-        """Handle notification when user is removed from a group chat."""
-        # Send notification to refresh UI
-        await self.send_json(
-            {"action": "removed_from_group", "payload": event["payload"]}
-        )
-
-    async def notify_group_chat_updated(self, event: GroupChatUpdateEvent) -> None:
-        """
-        Handle notification of a group chat being updated (e.g., new message).
-
-        Args:
-            event: The event containing the updated group chat data
-        """
-        # Send the notification to the WebSocket client
-        await self.send_json(
-            {"action": "group_chat_updated", "payload": event["payload"]}
-        )
+    async def receive_event(self, event: GroupChatEvent) -> None:
+        """Handle incoming WebSocket events."""
+        match event:
+            case NotifyAddedToGroupEvent(payload=payload):
+                await self.send_message(AddedToGroupMessage(payload=payload))
+            case NotifyRemovedFromGroupEvent(payload=payload):
+                await self.send_message(RemovedFromGroupMessage(payload=payload))
+            case NotifyGroupChatUpdateEvent(payload=payload):
+                await self.send_message(GroupChatUpdatedMessage(payload=payload))
