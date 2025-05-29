@@ -68,8 +68,10 @@
         <div class="message-content p-2 rounded"></div>
     </div>
 </template>
+{% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
     // Current group chat ID
     const groupId = {{ group_chat.pk }};
@@ -266,5 +268,4 @@
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 </script>
-{% endblock %}
 {% endblock %}

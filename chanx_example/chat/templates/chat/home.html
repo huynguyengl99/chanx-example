@@ -107,6 +107,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 {% if request.user.is_authenticated %}
 <script>
 /**

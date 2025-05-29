@@ -99,6 +99,7 @@
 {% endblock %}
 
 {% block extra_js %}
+{{ block.super }}
 <script>
     // Group chat ID
     const groupId = {{ group_chat.pk }};

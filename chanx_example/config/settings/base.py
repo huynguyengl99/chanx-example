@@ -82,7 +82,7 @@ THIRD_PARTY_APPS = [
     "chanx.playground",
 ]
 
-LOCAL_APPS = ["accounts", "assistants", "chat", "discussion"]
+LOCAL_APPS = ["accounts", "assistants", "chat", "core", "discussion"]
 
 EXTRA_APP = ["django_cleanup.apps.CleanupConfig"]
 
