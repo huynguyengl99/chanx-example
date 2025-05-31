@@ -94,13 +94,11 @@ class HomeView(APIView):
             "user_chats": [],
         }
 
-        # Get user's chats if authenticated
-        if request.user.is_authenticated:
-            request_auth = cast(AuthenticatedRequest, request)
-            user_chats = GroupChat.objects.filter(
-                members__user=request_auth.user
-            ).order_by("-updated_at")
-            context["user_chats"] = user_chats
+        request_auth = cast(AuthenticatedRequest, request)
+        user_chats = GroupChat.objects.filter(members__user=request_auth.user).order_by(
+            "-updated_at"
+        )
+        context["user_chats"] = user_chats
 
         # Return the template with the form
         return render(

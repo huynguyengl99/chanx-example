@@ -1,6 +1,4 @@
 from .group import (
-    task_handle_group_chat_create,
-    task_handle_group_chat_delete,
     task_handle_group_chat_update,
 )
 from .member import (
@@ -14,8 +12,6 @@ from .message import (
 __all__ = [
     # Group chat tasks
     "task_handle_group_chat_update",
-    "task_handle_group_chat_create",
-    "task_handle_group_chat_delete",
     # Member tasks
     "task_handle_new_group_member",
     "task_handle_remove_group_member",

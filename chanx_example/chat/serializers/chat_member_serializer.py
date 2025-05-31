@@ -6,18 +6,6 @@ from accounts.serializers.user_serializer import EmailUserField
 from chat.models import ChatMember
 
 
-class ChatMemberSerializer(serializers.ModelSerializer[ChatMember]):
-    class Meta:
-        model = ChatMember
-        fields = [
-            "nick_name",
-            "chat_role",
-        ]
-        read_only_fields = [
-            "chat_role",
-        ]
-
-
 class ManageChatMemberSerializer(serializers.ModelSerializer[ChatMember]):
     user = EmailUserField()
 

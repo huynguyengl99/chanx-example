@@ -48,8 +48,6 @@ class GroupChatConsumer(
         match message:
             case PingMessage():
                 await self.send_message(PongMessage())
-            case _:
-                pass
 
     async def receive_event(self, event: GroupChatEvent) -> None:
         """Handle incoming WebSocket events."""

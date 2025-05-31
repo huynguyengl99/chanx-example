@@ -38,32 +38,3 @@ def task_handle_group_chat_update(group_chat_id: int) -> None:
     except GroupChat.DoesNotExist:
         # Log error or handle gracefully
         pass
-
-
-def task_handle_group_chat_create(group_chat_id: int) -> None:
-    """
-    Handle notifying users that a new group chat has been created.
-
-    This doesn't use WebSockets directly - it just sends a notification
-    to refresh the group list via API. For real-time updates, the UI will
-    make an API call to refresh the list.
-
-    Args:
-        group_chat_id: ID of the newly created group chat
-    """
-    # No WebSocket notification needed - users will refresh via API
-    pass
-
-
-def task_handle_group_chat_delete(group_chat_id: int) -> None:
-    """
-    Handle notifying users that a group chat has been deleted.
-
-    This doesn't use WebSockets directly - when users try to access
-    a deleted group chat, they'll be redirected to the group list.
-
-    Args:
-        group_chat_id: ID of the deleted group chat
-    """
-    # No WebSocket notification needed - users will refresh via API
-    pass

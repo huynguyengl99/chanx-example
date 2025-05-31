@@ -207,6 +207,24 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         assert "Role" in content
         assert "Actions" in content
 
+    def test_add_existing_member_integrity_error(self) -> None:
+        """Test adding a user who is already a member (covers IntegrityError handling)."""
+        # First, add the other_user to the group
+        ChatMemberFactory.create(user=self.other_user, group_chat=self.group_chat)
+
+        member_data = {
+            "email": self.other_user.email,
+            "role": str(ChatMember.ChatMemberRole.MEMBER),
+        }
+
+        # Try to add the same user again - should trigger IntegrityError
+        # The view should catch it and redirect (lines 105-109)
+        response = self.auth_client.post(self.url, member_data)
+
+        # Should redirect back to members page (error handled gracefully)
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == self.url
+
 
 class RemoveMemberViewTestCase(AuthAPITestCase):
     """Test case for RemoveMemberView."""
