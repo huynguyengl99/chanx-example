@@ -4,23 +4,7 @@ from chanx.messages.base import BaseChannelEvent, BaseMessage
 from chanx.messages.incoming import PingMessage
 from pydantic import BaseModel
 
-
-class MessagePayload(BaseModel):
-    content: str
-    groups: list[str] | None = None
-
-
-class NewChatMessage(BaseMessage):
-    action: Literal["new_chat_message"] = "new_chat_message"
-    payload: MessagePayload
-
-
-class ReplyChatMessage(BaseMessage):
-    action: Literal["reply_chat_message"] = "reply_chat_message"
-    payload: MessagePayload
-
-
-ChatIncomingMessage = NewChatMessage | PingMessage
+ChatIncomingMessage = PingMessage
 
 
 class MemberAddedMessage(BaseMessage):

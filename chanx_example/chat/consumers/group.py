@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, assert_never
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
@@ -48,6 +48,8 @@ class GroupChatConsumer(
         match message:
             case PingMessage():
                 await self.send_message(PongMessage())
+            case _:
+                assert_never(message)
 
     async def receive_event(self, event: GroupChatEvent) -> None:
         """Handle incoming WebSocket events."""
@@ -58,3 +60,5 @@ class GroupChatConsumer(
                 await self.send_message(RemovedFromGroupMessage(payload=payload))
             case NotifyGroupChatUpdateEvent(payload=payload):
                 await self.send_message(GroupChatUpdatedMessage(payload=payload))
+            case _:
+                assert_never(event)
