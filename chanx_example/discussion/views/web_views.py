@@ -1,8 +1,9 @@
 from typing import Any, cast
 
+from django.contrib import messages
 from django.db import models
-from django.http import HttpRequest, HttpResponse
-from django.shortcuts import get_object_or_404, redirect
+from django.http import HttpRequest, HttpResponse, HttpResponseRedirect
+from django.shortcuts import redirect
 from django.urls import reverse
 from rest_framework.permissions import AllowAny
 from rest_framework.renderers import TemplateHTMLRenderer
@@ -88,26 +89,53 @@ class DiscussionTopicDetailView(APIView):
     template_name = "discussion/topic_detail.html"
     permission_classes = [AllowAny]
 
-    def get(self, request: HttpRequest, pk: int) -> Response:
+    def get_django_request(self, request: Request) -> HttpRequest:
+        """Helper method to get Django HttpRequest for messages."""
+        return cast(HttpRequest, request)
+
+    def add_message(self, request: Request, level: int, message: str) -> None:
+        """Helper method to add messages to the request."""
+        django_request = self.get_django_request(request)
+        messages.add_message(django_request, level, message)
+
+    def get(self, request: Request, pk: int) -> Response | HttpResponseRedirect:
         """Handle GET requests to display topic details."""
-        topic = get_object_or_404(
-            DiscussionTopic.objects.select_related(
-                "author", "accepted_answer__author"
-            ).prefetch_related("replies__author"),
-            pk=pk,
-        )
+        # Try to get the topic, redirect to home with message if not found
+        try:
+            topic = (
+                DiscussionTopic.objects.select_related(
+                    "author", "accepted_answer__author"
+                )
+                .prefetch_related("replies__author")
+                .get(pk=pk)
+            )
+        except DiscussionTopic.DoesNotExist:
+            self.add_message(
+                request,
+                messages.ERROR,
+                "Discussion not found. The discussion you're looking for doesn't exist or may have been removed.",
+            )
+            return redirect("discussion-home")
 
-        # Increment view count
-        DiscussionTopic.objects.filter(pk=pk).update(
-            view_count=models.F("view_count") + 1
-        )
+        # Initialize context
+        context: dict[str, Any] = {
+            "topic": topic,
+            "replies": [],
+        }
 
-        # Get all replies, ordered by votes then creation date
-        replies = topic.replies.order_by("-vote_count", "created_at")
+        # Only show replies and increment view count if user is authenticated
+        if request.user.is_authenticated:
+            # Increment view count only for authenticated users
+            DiscussionTopic.objects.filter(pk=pk).update(
+                view_count=models.F("view_count") + 1
+            )
 
-        return Response(
-            {
-                "topic": topic,
-                "replies": replies,
-            }
-        )
+            # Get all replies, ordered by votes then creation date
+            replies = topic.replies.order_by("-vote_count", "created_at")
+            context["replies"] = replies
+
+            # Refresh topic instance to get updated view count
+            topic.refresh_from_db()
+            context["topic"] = topic
+
+        return Response(context)

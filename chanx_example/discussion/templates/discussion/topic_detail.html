@@ -1,6 +1,6 @@
 {% extends "discussion/base.html" %}
 
-{% block title %}{{ topic.title }} - Discussion{% endblock %}
+{% block title %}{% if request.user.is_authenticated %}{{ topic.title }}{% else %}Discussion{% endif %} - Discussion{% endblock %}
 
 {% block content %}
 <div class="container py-4">
@@ -14,21 +14,85 @@
     {% if not request.user.is_authenticated %}
     <div class="alert alert-info">
         <h4 class="alert-heading">Join the Discussion!</h4>
-        <p>You can view this discussion, but you need to log in to vote, answer questions, or participate.</p>
+        <p>This discussion contains valuable content from our community, but you need to log in to view any discussion details.</p>
         <hr>
         <p class="mb-0">
             <a href="{% url 'rest_login' %}?next={{ request.path }}" class="alert-link btn btn-primary btn-sm">
-                <i class="bi bi-box-arrow-in-right"></i> Log In to Participate
+                <i class="bi bi-box-arrow-in-right"></i> Log In to View Discussion
             </a>
         </p>
     </div>
-    {% endif %}
+
+    <!-- Completely hidden topic card for unauthenticated users -->
+    <div class="topic-card">
+        <div class="d-flex">
+            <!-- Minimal vote display without actual numbers -->
+            <div class="vote-buttons me-3">
+                <div class="vote-btn disabled">
+                    <i class="bi bi-chevron-up"></i>
+                </div>
+                <div class="vote-score-display">
+                    <i class="bi bi-lock" style="font-size: 0.8rem;"></i>
+                </div>
+                <div class="vote-btn disabled">
+                    <i class="bi bi-chevron-down"></i>
+                </div>
+                <small class="text-muted mt-2">Log in to vote</small>
+            </div>
+
+            <!-- Completely hidden content -->
+            <div class="flex-grow-1">
+                <div class="topic-title">
+                    <h1>
+                        <i class="bi bi-lock"></i> Private Discussion
+                    </h1>
+                    <div class="badges">
+                        <span class="badge bg-secondary">
+                            <i class="bi bi-lock"></i> Protected
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Hide all content details -->
+                <div class="topic-content mb-3">
+                    <div class="alert alert-secondary">
+                        <i class="bi bi-lock"></i> <strong>All content is private</strong> - Please log in to view discussion details.
+                    </div>
+                </div>
+
+                <div class="topic-meta">
+                    <div class="author-info">
+                        <div class="author-avatar">
+                            <i class="bi bi-person" style="font-size: 0.8rem;"></i>
+                        </div>
+                        <span class="text-muted">Details hidden - log in to view</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Simplified protected content section -->
+    <div class="mt-4">
+        <div class="alert alert-warning">
+            <h5 class="alert-heading">
+                <i class="bi bi-shield-lock"></i> Discussion Access Required
+            </h5>
+            <p>This is a private discussion. All details including title, content, author information, and replies are only visible to authenticated users.</p>
+            <hr>
+            <a href="{% url 'rest_login' %}?next={{ request.path }}" class="btn btn-primary">
+                <i class="bi bi-box-arrow-in-right"></i> Log In to Access Discussion
+            </a>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Full content for authenticated users -->
 
     <!-- Topic Card -->
     <div class="topic-card" data-topic-id="{{ topic.id }}">
         <div class="d-flex">
             <!-- Vote Column -->
-            {% if request.user.is_authenticated %}
             <div class="vote-buttons me-3" data-target-type="topic" data-target-id="{{ topic.id }}">
                 <button class="vote-btn upvote" data-vote="1">
                     <i class="bi bi-chevron-up"></i>
@@ -38,19 +102,6 @@
                     <i class="bi bi-chevron-down"></i>
                 </button>
             </div>
-            {% else %}
-            <!-- Read-only vote display for unauthenticated users -->
-            <div class="vote-buttons me-3">
-                <div class="vote-btn disabled">
-                    <i class="bi bi-chevron-up"></i>
-                </div>
-                <div class="vote-score-display">{{ topic.vote_count }}</div>
-                <div class="vote-btn disabled">
-                    <i class="bi bi-chevron-down"></i>
-                </div>
-                <small class="text-muted mt-2">Log in to vote</small>
-            </div>
-            {% endif %}
 
             <!-- Topic Content -->
             <div class="flex-grow-1">
@@ -80,7 +131,7 @@
                     </div>
                     <div class="d-flex align-items-center gap-2">
                         <small class="text-muted">{{ topic.view_count }} views</small>
-                        {% if request.user.is_authenticated and topic.author == request.user %}
+                        {% if topic.author == request.user %}
                         <button class="btn btn-sm btn-outline-secondary">
                             <i class="bi bi-pencil"></i> Edit
                         </button>
@@ -121,7 +172,6 @@
             <div class="reply-card {% if reply.is_accepted %}accepted-answer{% endif %}" data-reply-id="{{ reply.id }}" data-created-at="{{ reply.created_at|date:'c' }}" data-vote-count="{{ reply.vote_count }}">
                 <div class="d-flex">
                     <!-- Vote Column -->
-                    {% if request.user.is_authenticated %}
                     <div class="vote-buttons me-3" data-target-type="reply" data-target-id="{{ reply.id }}">
                         <button class="vote-btn upvote" data-vote="1">
                             <i class="bi bi-chevron-up"></i>
@@ -142,18 +192,6 @@
                         </button>
                         {% endif %}
                     </div>
-                    {% else %}
-                    <!-- Read-only vote display for unauthenticated users -->
-                    <div class="vote-buttons me-3">
-                        <div class="vote-btn disabled">
-                            <i class="bi bi-chevron-up"></i>
-                        </div>
-                        <div class="vote-score-display">{{ reply.vote_count }}</div>
-                        <div class="vote-btn disabled">
-                            <i class="bi bi-chevron-down"></i>
-                        </div>
-                    </div>
-                    {% endif %}
 
                     <!-- Reply Content -->
                     <div class="flex-grow-1">
@@ -179,7 +217,7 @@
                                 {% endif %}
                             </div>
                             <div>
-                                {% if request.user.is_authenticated and reply.author == request.user %}
+                                {% if reply.author == request.user %}
                                 <button class="btn btn-sm btn-outline-secondary">
                                     <i class="bi bi-pencil"></i> Edit
                                 </button>
@@ -193,20 +231,12 @@
             <div class="text-center py-4" id="noRepliesMessage">
                 <i class="bi bi-chat-left-text fs-1 text-muted"></i>
                 <p class="mt-3 text-muted">No answers yet. Be the first to help!</p>
-                {% if not request.user.is_authenticated %}
-                <p class="text-muted">
-                    <a href="{% url 'rest_login' %}?next={{ request.path }}" class="btn btn-outline-primary">
-                        Log In to Answer
-                    </a>
-                </p>
-                {% endif %}
             </div>
             {% endfor %}
         </div>
     </div>
 
     <!-- New Answer Form (only for authenticated users) -->
-    {% if request.user.is_authenticated %}
     <div class="mt-4">
         <h4>Your Answer</h4>
         <div class="reply-form">
@@ -231,23 +261,8 @@
             <div id="previewContent"></div>
         </div>
     </div>
-    {% else %}
-    <!-- Login prompt for unauthenticated users -->
-    <div class="mt-4">
-        <div class="card">
-            <div class="card-body text-center">
-                <h5 class="card-title">Want to Answer This Question?</h5>
-                <p class="card-text">Join the community and share your knowledge!</p>
-                <a href="{% url 'rest_login' %}?next={{ request.path }}" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-in-right"></i> Log In to Answer
-                </a>
-            </div>
-        </div>
-    </div>
-    {% endif %}
 
     <!-- Hidden data for the current user (only if authenticated) -->
-    {% if request.user.is_authenticated %}
     <script type="application/json" id="currentUserData">
         {
             "id": {{ request.user.id|default:"null" }},
@@ -903,52 +918,15 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 {% else %}
-<!-- Simple script for unauthenticated users - just handle sort buttons if replies exist -->
+<!-- Simple script for unauthenticated users - just handle basic interactions -->
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // Sort options for unauthenticated users
-    document.querySelectorAll('[data-sort]').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const sortType = e.target.dataset.sort;
-            sortReplies(sortType);
-
-            // Update active state
-            document.querySelectorAll('[data-sort]').forEach(b => b.classList.remove('active'));
-            e.target.classList.add('active');
-        });
+    // Show helpful message when clicking on disabled elements
+    document.addEventListener('click', (e) => {
+        if (e.target.closest('.vote-btn.disabled')) {
+            showNotification('Please log in to vote on discussions', 'info');
+        }
     });
-
-    function sortReplies(sortType) {
-        const repliesList = document.getElementById('repliesList');
-        const replies = Array.from(repliesList.children);
-        const replyCards = replies.filter(el => el.classList.contains('reply-card'));
-
-        replyCards.sort((a, b) => {
-            switch (sortType) {
-                case 'votes':
-                    const scoreA = parseInt(a.querySelector('.vote-score-display')?.textContent || '0');
-                    const scoreB = parseInt(b.querySelector('.vote-score-display')?.textContent || '0');
-                    if (scoreA === scoreB) {
-                        const timeA = new Date(a.dataset.createdAt || 0);
-                        const timeB = new Date(b.dataset.createdAt || 0);
-                        return timeA - timeB;
-                    }
-                    return scoreB - scoreA;
-                case 'newest':
-                    const timeA = new Date(a.dataset.createdAt || 0);
-                    const timeB = new Date(b.dataset.createdAt || 0);
-                    return timeB - timeA;
-                case 'oldest':
-                    const oldTimeA = new Date(a.dataset.createdAt || 0);
-                    const oldTimeB = new Date(b.dataset.createdAt || 0);
-                    return oldTimeA - oldTimeB;
-                default:
-                    return 0;
-            }
-        });
-
-        replyCards.forEach(reply => repliesList.appendChild(reply));
-    }
 });
 </script>
 {% endif %}
