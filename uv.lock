@@ -415,7 +415,7 @@ wheels = [
 
 [[package]]
 name = "chanx"
-version = "0.11.0"
+version = "0.11.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "channels" },
@@ -428,9 +428,9 @@ dependencies = [
     { name = "structlog" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/98/7d/d76f06c5dbcd78dedf1b60534c08e9f6cff06a16c0d13493ac8549ac02d2/chanx-0.11.0.tar.gz", hash = "sha256:80519f6825060aa2c6413f04245a5b82e22f0a04b06cd48ec23e4dcce6c34196", size = 47695 }
+sdist = { url = "https://files.pythonhosted.org/packages/d7/46/5a286404db2fc2b88032eeb730cbbd6fb3c849dac9af293a47898a9b418e/chanx-0.11.1.tar.gz", hash = "sha256:54e013ab841d73e2f7aa661dc0f24165b2b09a42ed5ad0cc9ebcbb5b35156973", size = 47702 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dd/a8/f7af88207fa329cf0f30cddfce31a3126f613dbde6291edbf1a785f411bb/chanx-0.11.0-py3-none-any.whl", hash = "sha256:0773d3de0e011cdc46e4f20583e36df42818f0d48fcced627092616d0214ff3d", size = 61080 },
+    { url = "https://files.pythonhosted.org/packages/a3/d6/13439a89961e55ac314160b62f2c04b22acff7299e8ff3e0994891dd4847/chanx-0.11.1-py3-none-any.whl", hash = "sha256:34ad8529ff31e7e2b5d298941f47ec5977c380b0a9c312d72b267ea15334b9af", size = 61097 },
 ]
 
 [package.optional-dependencies]
@@ -511,7 +511,7 @@ requires-dist = [
     { name = "celery", specifier = ">=5.5.0,<6" },
     { name = "channels", specifier = ">=4.2.2,<5" },
     { name = "channels-redis", specifier = ">=4.2.1,<5" },
-    { name = "chanx", extras = ["camel-case"], specifier = ">=0.11.0" },
+    { name = "chanx", extras = ["camel-case"], specifier = ">=0.11.1" },
     { name = "dj-rest-auth", extras = ["with-social"], specifier = ">=7.0.1,<8" },
     { name = "django", specifier = ">=5.1,<6" },
     { name = "django-anymail", specifier = ">=13.0,<14" },
@@ -565,7 +565,7 @@ lint = [
     { name = "djangorestframework-stubs", extras = ["compatible-mypy"], specifier = ">=3.16.0" },
     { name = "mypy", specifier = ">=1.15.0" },
     { name = "pre-commit", specifier = ">=3.4.0,<4.0.0" },
-    { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.400,<2" },
+    { name = "pyright", extras = ["nodejs"], specifier = ">=1.1.401" },
     { name = "ruff", specifier = ">=0.11.3,<0.12" },
     { name = "toml-sort", specifier = ">=0.24.2,<0.25" },
 ]
@@ -2371,18 +2371,18 @@ wheels = [
 
 [[package]]
 name = "nodejs-wheel-binaries"
-version = "22.15.0"
+version = "22.16.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/45/5b/6c5f973765b96793d4e4d03684bcbd273b17e471ecc7e9bec4c32b595ebd/nodejs_wheel_binaries-22.15.0.tar.gz", hash = "sha256:ff81aa2a79db279c2266686ebcb829b6634d049a5a49fc7dc6921e4f18af9703", size = 8054 }
+sdist = { url = "https://files.pythonhosted.org/packages/0f/c6/66f36b7b0d528660dfb4a59cb9b8dd6a3f4c0a3939cd49c404a775ea4a63/nodejs_wheel_binaries-22.16.0.tar.gz", hash = "sha256:d695832f026df3a0cf9a089d222225939de9d1b67f8f0a353b79f015aabbe7e2", size = 8061 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d3/a8/a32e5bb99e95c536e7dac781cffab1e7e9f8661b8ee296b93df77e4df7f9/nodejs_wheel_binaries-22.15.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:aa16366d48487fff89446fb237693e777aa2ecd987208db7d4e35acc40c3e1b1", size = 50514526 },
-    { url = "https://files.pythonhosted.org/packages/05/e8/eb024dbb3a7d3b98c8922d1c306be989befad4d2132292954cb902f43b07/nodejs_wheel_binaries-22.15.0-py2.py3-none-macosx_11_0_x86_64.whl", hash = "sha256:a54bb3fee9170003fa8abc69572d819b2b1540344eff78505fcc2129a9175596", size = 51409179 },
-    { url = "https://files.pythonhosted.org/packages/3f/0f/baa968456c3577e45c7d0e3715258bd175dcecc67b683a41a5044d5dae40/nodejs_wheel_binaries-22.15.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:867121ccf99d10523f6878a26db86e162c4939690e24cfb5bea56d01ea696c93", size = 57364460 },
-    { url = "https://files.pythonhosted.org/packages/2f/a2/977f63cd07ed8fc27bc0d0cd72e801fc3691ffc8cd40a51496ff18a6d0a2/nodejs_wheel_binaries-22.15.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0ab0fbcda2ddc8aab7db1505d72cb958f99324b3834c4543541a305e02bfe860", size = 57889101 },
-    { url = "https://files.pythonhosted.org/packages/67/7f/57b9c24a4f0d25490527b043146aa0fdff2d8fdc82f90667cdaf6f00cfc9/nodejs_wheel_binaries-22.15.0-py2.py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:2bde1d8e00cd955b9ce9ee9ac08309923e2778a790ee791b715e93e487e74bfd", size = 59190817 },
-    { url = "https://files.pythonhosted.org/packages/fd/7f/970acbe33b81c22b3c7928f52e32347030aa46d23d779cf781cf9a9cf557/nodejs_wheel_binaries-22.15.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:acdd4ef73b6701aab9fbe02ac5e104f208a5e3c300402fa41ad7bc7f49499fbf", size = 60220316 },
-    { url = "https://files.pythonhosted.org/packages/07/4c/030243c04bb60f0de66c2d7ee3be289c6d28ef09113c06ffa417bdfedf8f/nodejs_wheel_binaries-22.15.0-py2.py3-none-win_amd64.whl", hash = "sha256:51deaf13ee474e39684ce8c066dfe86240edb94e7241950ca789befbbbcbd23d", size = 40718853 },
-    { url = "https://files.pythonhosted.org/packages/1f/49/011d472814af4fabeaab7d7ce3d5a1a635a3dadc23ae404d1f546839ecb3/nodejs_wheel_binaries-22.15.0-py2.py3-none-win_arm64.whl", hash = "sha256:01a3fe4d60477f93bf21a44219db33548c75d7fed6dc6e6f4c05cf0adf015609", size = 36436645 },
+    { url = "https://files.pythonhosted.org/packages/d7/dc/417a5c5f99e53a5d2b3be122506312731eb90fb9630c248e327e2e38cc6b/nodejs_wheel_binaries-22.16.0-py2.py3-none-macosx_11_0_arm64.whl", hash = "sha256:986b715a96ed703f8ce0c15712f76fc42895cf09067d72b6ef29e8b334eccf64", size = 50957501 },
+    { url = "https://files.pythonhosted.org/packages/0e/dd/d6ce48209ed15f5d1fccb29eeaa111f962557123eaf4fd03a7316c42734c/nodejs_wheel_binaries-22.16.0-py2.py3-none-macosx_11_0_x86_64.whl", hash = "sha256:4ae3cf22138891cb44c3ee952862a257ce082b098b29024d7175684a9a77b0c0", size = 51891634 },
+    { url = "https://files.pythonhosted.org/packages/80/fa/a07e622fd87717eec3e5cff41575f85ad62717e8698884d28ca809266ca1/nodejs_wheel_binaries-22.16.0-py2.py3-none-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:71f2de4dc0b64ae43e146897ce811f80ac4f9acfbae6ccf814226282bf4ef174", size = 57857862 },
+    { url = "https://files.pythonhosted.org/packages/1f/80/52736f9570a93f8e6b7942981dc9770eca2bc7aa1d200c1d54198374a6ca/nodejs_wheel_binaries-22.16.0-py2.py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:dbfccbcd558d2f142ccf66d8c3a098022bf4436db9525b5b8d32169ce185d99e", size = 58395868 },
+    { url = "https://files.pythonhosted.org/packages/0f/0e/53616a5ed8fc1fbe9e48bf132862da5a9abf5cc7f8483dab1722ec257187/nodejs_wheel_binaries-22.16.0-py2.py3-none-musllinux_1_2_aarch64.whl", hash = "sha256:447ad796850eb52ca20356ad39b2d296ed8fef3f214921f84a1ccdad49f2eba1", size = 59712469 },
+    { url = "https://files.pythonhosted.org/packages/4a/cd/e2b5083df581fc1d08eb93feb6f8fbd3d56b113cef9b59d8e0fb7d4dd4f3/nodejs_wheel_binaries-22.16.0-py2.py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:7f526ca6a132b0caf633566a2a78c6985fe92857e7bfdb37380f76205a10b808", size = 60763005 },
+    { url = "https://files.pythonhosted.org/packages/71/8d/57112b49214e8bd636f3cc3386eba6be4d23552ec8a0f6efbe814013caa7/nodejs_wheel_binaries-22.16.0-py2.py3-none-win_amd64.whl", hash = "sha256:2fffb4bf1066fb5f660da20819d754f1b424bca1b234ba0f4fa901c52e3975fb", size = 41313324 },
+    { url = "https://files.pythonhosted.org/packages/91/03/a852711aec73dfb965844592dfe226024c0da28e37d1ee54083342e38f57/nodejs_wheel_binaries-22.16.0-py2.py3-none-win_arm64.whl", hash = "sha256:2728972d336d436d39ee45988978d8b5d963509e06f063e80fe41b203ee80b28", size = 38828154 },
 ]
 
 [[package]]
@@ -3020,15 +3020,15 @@ wheels = [
 
 [[package]]
 name = "pyright"
-version = "1.1.400"
+version = "1.1.401"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "nodeenv" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6c/cb/c306618a02d0ee8aed5fb8d0fe0ecfed0dbf075f71468f03a30b5f4e1fe0/pyright-1.1.400.tar.gz", hash = "sha256:b8a3ba40481aa47ba08ffb3228e821d22f7d391f83609211335858bf05686bdb", size = 3846546 }
+sdist = { url = "https://files.pythonhosted.org/packages/79/9a/7ab2b333b921b2d6bfcffe05a0e0a0bbeff884bd6fb5ed50cd68e2898e53/pyright-1.1.401.tar.gz", hash = "sha256:788a82b6611fa5e34a326a921d86d898768cddf59edde8e93e56087d277cc6f1", size = 3894193 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/a5/5d285e4932cf149c90e3c425610c5efaea005475d5f96f1bfdb452956c62/pyright-1.1.400-py3-none-any.whl", hash = "sha256:c80d04f98b5a4358ad3a35e241dbf2a408eee33a40779df365644f8054d2517e", size = 5563460 },
+    { url = "https://files.pythonhosted.org/packages/0d/e6/1f908fce68b0401d41580e0f9acc4c3d1b248adcff00dfaad75cd21a1370/pyright-1.1.401-py3-none-any.whl", hash = "sha256:6fde30492ba5b0d7667c16ecaf6c699fab8d7a1263f6a18549e0b00bf7724c06", size = 5629193 },
 ]
 
 [package.optional-dependencies]

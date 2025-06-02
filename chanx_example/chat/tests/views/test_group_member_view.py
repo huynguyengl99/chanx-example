@@ -12,7 +12,7 @@ from test_utils.auth_api_test_case import AuthAPITestCase
 
 
 class GroupMemberManagementViewTestCase(AuthAPITestCase):
-    """Test case for GroupMemberManagementView and RemoveMemberView."""
+    """Test case for GroupMemberManagementView."""
 
     def setUp(self) -> None:
         super().setUp()
@@ -52,6 +52,9 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         can_manage = response.context.get("can_manage")
         assert can_manage is True
 
+        is_member = response.context.get("is_member")
+        assert is_member is True
+
     def test_get_members_page_as_regular_member(self) -> None:
         """Test that a regular member can access the members page but cannot manage members."""
         # Change the user's role to regular member
@@ -61,14 +64,15 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.get(self.url)
 
-        # Verify response - can be 200 or 403 depending on the permission implementation
-        if response.status_code == status.HTTP_200_OK:
-            # Check that the user cannot manage members
-            can_manage = response.context.get("can_manage")
-            assert can_manage is False
-        else:
-            # Or the view might forbid regular members entirely
-            assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify response
+        assert response.status_code == status.HTTP_200_OK
+
+        # Check that the user cannot manage members
+        can_manage = response.context.get("can_manage")
+        assert can_manage is False
+
+        is_member = response.context.get("is_member")
+        assert is_member is True
 
     def test_get_members_page_as_owner(self) -> None:
         """Test that an owner can access and manage the members page."""
@@ -85,6 +89,64 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         # Check that the user can manage members
         can_manage = response.context.get("can_manage")
         assert can_manage is True
+
+        is_member = response.context.get("is_member")
+        assert is_member is True
+
+    def test_get_members_page_unauthenticated(self) -> None:
+        """Test that unauthenticated users can view the page but with limited functionality."""
+        # Make the request with unauthenticated client
+        response = self.client.get(self.url)
+
+        # Verify response - should allow access now
+        assert response.status_code == status.HTTP_200_OK
+
+        # Check that the template was rendered
+        assert "chat/group_members.html" in [t.name for t in response.templates]
+
+        # Check context values for unauthenticated users
+        can_manage = response.context.get("can_manage")
+        assert can_manage is False
+
+        is_member = response.context.get("is_member")
+        assert is_member is False
+
+        members = response.context.get("members")
+        assert members == []
+
+    def test_get_members_page_as_non_member(self) -> None:
+        """Test that authenticated non-members can view the page but with limited functionality."""
+        # Create a new user who is not a member
+        other_user = UserFactory.create()
+        other_client = self.get_client_for_user(other_user)
+
+        # Make the request
+        response = other_client.get(self.url)
+
+        # Verify response - should allow access now
+        assert response.status_code == status.HTTP_200_OK
+
+        # Check context values for non-members
+        can_manage = response.context.get("can_manage")
+        assert can_manage is False
+
+        is_member = response.context.get("is_member")
+        assert is_member is False
+
+        members = response.context.get("members")
+        assert members == []
+
+    def test_get_members_page_nonexistent_group(self) -> None:
+        """Test accessing members page for a nonexistent group redirects to home."""
+        # URL for a nonexistent group chat
+        url = reverse("group_members", kwargs={"pk": 99999})
+
+        # Make the request
+        response = self.auth_client.get(url)
+
+        # Should redirect to chat-home
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse("chat-home")
 
     def test_add_new_member(self) -> None:
         """Test adding a new member to the group chat."""
@@ -185,15 +247,78 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.post(self.url, member_data)
 
-        # Verify that we get a forbidden response
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify that we get redirected back to the members page with error
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == self.url
 
         # Verify no new member was added
         members = ChatMember.objects.filter(group_chat=self.group_chat)
         assert members.count() == 1
 
-    def test_page_contains_required_elements(self) -> None:
-        """Test that the members page contains all required UI elements."""
+    def test_non_member_cannot_add_members(self) -> None:
+        """Test that authenticated non-members cannot add members."""
+        # Create a new user who is not a member
+        other_user = UserFactory.create()
+        other_client = self.get_client_for_user(other_user)
+
+        # Member data
+        member_data = {
+            "email": self.other_user.email,
+            "role": str(ChatMember.ChatMemberRole.MEMBER),
+        }
+
+        # Make the request
+        response = other_client.post(self.url, member_data)
+
+        # Should redirect to chat-home with error message
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse("chat-home")
+
+        # Verify no new member was added
+        members = ChatMember.objects.filter(group_chat=self.group_chat)
+        assert members.count() == 1
+
+    def test_unauthenticated_user_cannot_add_members(self) -> None:
+        """Test that unauthenticated users are redirected to login when trying to add members."""
+        # Member data
+        member_data = {
+            "email": self.other_user.email,
+            "role": str(ChatMember.ChatMemberRole.MEMBER),
+        }
+
+        # Make the request with unauthenticated client
+        response = self.client.post(self.url, member_data)
+
+        # Should redirect to login
+        assert response.status_code == status.HTTP_302_FOUND
+        redirect_url = cast(HttpResponseRedirect, response).url
+        # Check for login URL (could be rest_login or accounts/login)
+        assert "rest_login" in redirect_url or "accounts/login" in redirect_url
+
+        # Verify no new member was added
+        members = ChatMember.objects.filter(group_chat=self.group_chat)
+        assert members.count() == 1
+
+    def test_post_to_nonexistent_group_redirects_to_home(self) -> None:
+        """Test that POST to nonexistent group redirects to home."""
+        # URL for a nonexistent group chat
+        url = reverse("group_members", kwargs={"pk": 99999})
+
+        # Member data
+        member_data = {
+            "email": self.other_user.email,
+            "role": str(ChatMember.ChatMemberRole.MEMBER),
+        }
+
+        # Make the request
+        response = self.auth_client.post(url, member_data)
+
+        # Should redirect to chat-home
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse("chat-home")
+
+    def test_page_contains_required_elements_for_members(self) -> None:
+        """Test that the members page contains all required UI elements for members."""
         # Make the request
         response = self.auth_client.get(self.url)
         content = response.content.decode()
@@ -207,6 +332,32 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         assert "Role" in content
         assert "Actions" in content
 
+    def test_page_contains_login_prompt_for_unauthenticated(self) -> None:
+        """Test that the page shows login prompt for unauthenticated users."""
+        # Make the request with unauthenticated client
+        response = self.client.get(self.url)
+        content = response.content.decode()
+
+        # Check for login-related content
+        assert "Member Management" in content
+        assert "log in" in content
+        # Check for login URL (could be rest_login or accounts/login)
+        assert "rest_login" in content or "accounts/login" in content
+
+    def test_page_shows_access_restricted_for_non_members(self) -> None:
+        """Test that the page shows access restricted message for authenticated non-members."""
+        # Create a new user who is not a member
+        other_user = UserFactory.create()
+        other_client = self.get_client_for_user(other_user)
+
+        # Make the request
+        response = other_client.get(self.url)
+        content = response.content.decode()
+
+        # Check for access restricted content
+        assert "Access Restricted" in content
+        assert "not a member" in content
+
     def test_add_existing_member_integrity_error(self) -> None:
         """Test adding a user who is already a member (covers IntegrityError handling)."""
         # First, add the other_user to the group
@@ -218,7 +369,6 @@ class GroupMemberManagementViewTestCase(AuthAPITestCase):
         }
 
         # Try to add the same user again - should trigger IntegrityError
-        # The view should catch it and redirect (lines 105-109)
         response = self.auth_client.post(self.url, member_data)
 
         # Should redirect back to members page (error handled gracefully)
@@ -282,6 +432,20 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         # Verify the member was removed
         assert not ChatMember.objects.filter(pk=self.other_member.pk).exists()
 
+    def test_unauthenticated_user_cannot_remove_members(self) -> None:
+        """Test that unauthenticated users are redirected to login when trying to remove members."""
+        # Make the request with unauthenticated client
+        response = self.client.get(self.url)
+
+        # Should redirect to login
+        assert response.status_code == status.HTTP_302_FOUND
+        redirect_url = cast(HttpResponseRedirect, response).url
+        # Check for login URL (could be rest_login or accounts/login)
+        assert "rest_login" in redirect_url or "accounts/login" in redirect_url
+
+        # Verify the member was not removed
+        assert ChatMember.objects.filter(pk=self.other_member.pk).exists()
+
     def test_regular_member_cannot_remove_others(self) -> None:
         """Test that a regular member cannot remove other members."""
         # Create a third user as an admin
@@ -303,8 +467,11 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.get(url)
 
-        # Verify that we get a forbidden response
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify that we get redirected back with error message
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse(
+            "group_members", kwargs={"pk": self.group_chat.pk}
+        )
 
         # Verify the member was not removed
         assert ChatMember.objects.filter(pk=admin_member.pk).exists()
@@ -326,8 +493,11 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.get(url)
 
-        # Verify that we get a forbidden response
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify that we get redirected back with error message
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse(
+            "group_members", kwargs={"pk": self.group_chat.pk}
+        )
 
         # Verify the owner was not removed
         assert ChatMember.objects.filter(pk=owner_member.pk).exists()
@@ -341,8 +511,26 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         # Make the request
         response = non_member_client.get(self.url)
 
-        # Verify the user cannot access the remove member page
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify that we get redirected to chat-home with error message
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse("chat-home")
+
+        # Verify the member was not removed
+        assert ChatMember.objects.filter(pk=self.other_member.pk).exists()
+
+    def test_remove_from_nonexistent_group_redirects_to_home(self) -> None:
+        """Test that removing from nonexistent group redirects to home."""
+        # URL for a nonexistent group chat
+        url = reverse(
+            "remove_member", kwargs={"pk": 99999, "member_id": self.other_member.pk}
+        )
+
+        # Make the request
+        response = self.auth_client.get(url)
+
+        # Should redirect to chat-home
+        assert response.status_code == status.HTTP_302_FOUND
+        assert cast(HttpResponseRedirect, response).url == reverse("chat-home")
 
         # Verify the member was not removed
         assert ChatMember.objects.filter(pk=self.other_member.pk).exists()
@@ -357,4 +545,5 @@ class RemoveMemberViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.get(url)
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Should return 404 for nonexistent member
+        assert response.status_code == status.HTTP_404_NOT_FOUND

@@ -5,7 +5,7 @@ from django.db import models
 
 from django_stubs_ext.db.models import TypedModelMeta
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from chat.models import ChatMember, GroupChat  # noqa: F401
 
 
@@ -29,10 +29,6 @@ class ChatMessage(models.Model):
     class Meta(TypedModelMeta):
         ordering = ["-created_at"]
 
-    def __str__(self) -> str:
-        sender_email = self.sender.user.email if self.sender else "Unknown"
-        return f"{sender_email}: {self.content[:50]}..."
-
     def save(self, *args: Any, **kwargs: Any) -> None:
         """Override save to update group chat last activity."""
         is_new = self.pk is None
@@ -40,5 +36,5 @@ class ChatMessage(models.Model):
         super().save(*args, **kwargs)
 
         # Update group chat last activity timestamp if new message
-        if is_new and self.group_chat:
+        if is_new:
             self.group_chat.update_last_activity()

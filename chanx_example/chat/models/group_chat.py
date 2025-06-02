@@ -8,7 +8,7 @@ from django_stubs_ext.db.models import TypedModelMeta
 
 from chat.models import ChatMember
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from accounts.models import User  # noqa: F401
 
 

@@ -1,5 +1,6 @@
 from rest_framework.test import APIClient, APITestCase
 
+from asgiref.sync import sync_to_async
 from dj_rest_auth.app_settings import api_settings as jwt_settings
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -23,7 +24,8 @@ class AuthAPITestCase(APITestCase):
             user_refresh_token
         )
 
-    def get_client_for_user(self, user: User) -> APIClient:
+    @classmethod
+    def get_client_for_user(cls, user: User) -> APIClient:
         """
         Create an authenticated API client for a specific user.
 
@@ -40,3 +42,7 @@ class AuthAPITestCase(APITestCase):
         client.cookies[jwt_settings.JWT_AUTH_REFRESH_COOKIE] = str(refresh_token)
 
         return client
+
+    @classmethod
+    async def aget_client_for_user(cls, user: User) -> APIClient:
+        return await sync_to_async(cls.get_client_for_user)(user)

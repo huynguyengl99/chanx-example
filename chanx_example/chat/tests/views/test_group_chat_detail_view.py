@@ -1,5 +1,6 @@
 from typing import cast
 
+from django.http import HttpResponseRedirect
 from django.urls import reverse
 from rest_framework import status
 
@@ -56,16 +57,43 @@ class GroupChatDetailViewTestCase(AuthAPITestCase):
         assert len(user_chats) == 1
         assert user_chats[0].title == "Test Chat"
 
+        # Check member status
+        is_member = response.context.get("is_member")
+        assert is_member is True
+
+        user_member = response.context.get("user_member")
+        assert user_member is not None
+        assert user_member == self.chat_member
+
     def test_get_chat_detail_unauthenticated(self) -> None:
-        """Test that an unauthenticated user cannot access the chat detail page."""
+        """Test that an unauthenticated user can access the page but with limited functionality."""
         # Make the request with unauthenticated client
         response = self.client.get(self.url)
 
-        # Verify that we get an unauthorized response
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        # Verify that we get a successful response (not 401 anymore)
+        assert response.status_code == status.HTTP_200_OK
+
+        # Check that the template was rendered
+        assert "chat/group_chat.html" in [t.name for t in response.templates]
+
+        # Check that the group chat is in the context
+        group_chat = response.context.get("group_chat")
+        assert group_chat is not None
+        assert group_chat.title == "Test Chat"
+
+        # Check that user_chats is empty for unauthenticated users
+        user_chats = response.context.get("user_chats")
+        assert user_chats == []
+
+        # Check member status
+        is_member = response.context.get("is_member")
+        assert is_member is False
+
+        user_member = response.context.get("user_member")
+        assert user_member is None
 
     def test_get_chat_detail_as_non_member(self) -> None:
-        """Test that a non-member cannot access the chat detail page."""
+        """Test that an authenticated non-member can access the page but with restricted functionality."""
         # Create a new user who is not a member of the group chat
         other_user = UserFactory.create()
         other_client = self.get_client_for_user(other_user)
@@ -73,11 +101,30 @@ class GroupChatDetailViewTestCase(AuthAPITestCase):
         # Make the request
         response = other_client.get(self.url)
 
-        # Verify the user cannot access the chat detail page
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        # Verify the user can access the page (not 403 anymore)
+        assert response.status_code == status.HTTP_200_OK
 
-    def test_chat_detail_page_contains_required_elements(self) -> None:
-        """Test that the chat detail page contains all required UI elements."""
+        # Check that the template was rendered
+        assert "chat/group_chat.html" in [t.name for t in response.templates]
+
+        # Check that the group chat is in the context
+        group_chat = response.context.get("group_chat")
+        assert group_chat is not None
+        assert group_chat.title == "Test Chat"
+
+        # Check member status
+        is_member = response.context.get("is_member")
+        assert is_member is False
+
+        user_member = response.context.get("user_member")
+        assert user_member is None
+
+        # User chats should be empty since they're not a member of this chat
+        user_chats = response.context.get("user_chats")
+        assert user_chats == []
+
+    def test_chat_detail_page_contains_required_elements_for_members(self) -> None:
+        """Test that the chat detail page contains all required UI elements for members."""
         # Make the request
         response = self.auth_client.get(self.url)
         content = response.content.decode()
@@ -104,6 +151,43 @@ class GroupChatDetailViewTestCase(AuthAPITestCase):
         assert "sendMessage" in content
         assert "addMessageToUI" in content
 
+    def test_chat_detail_page_contains_login_prompt_for_unauthenticated(self) -> None:
+        """Test that the chat detail page shows login prompt for unauthenticated users."""
+        # Make the request with unauthenticated client
+        response = self.client.get(self.url)
+        content = response.content.decode()
+
+        # Check for login-related content
+        assert "Welcome to" in content
+        assert "log in" in content
+        # Check for the actual login URL instead of the URL name
+        login_url = reverse("rest_login")
+        assert login_url in content
+        assert self.group_chat.title in content
+
+        # Should not have WebSocket functionality
+        assert "connectWebSocket" not in content
+        assert "messageForm" not in content
+
+    def test_chat_detail_page_shows_access_restricted_for_non_members(self) -> None:
+        """Test that the chat detail page shows access restricted message for authenticated non-members."""
+        # Create a new user who is not a member
+        other_user = UserFactory.create()
+        other_client = self.get_client_for_user(other_user)
+
+        # Make the request
+        response = other_client.get(self.url)
+        content = response.content.decode()
+
+        # Check for access restricted content
+        assert "Access Restricted" in content
+        assert "not a member" in content
+        assert self.group_chat.title in content
+
+        # Should not have WebSocket functionality
+        assert "connectWebSocket" not in content
+        assert "messageForm" not in content
+
     def test_chat_detail_url_with_invalid_id(self) -> None:
         """Test accessing the chat detail page with an invalid group chat ID."""
         # URL for a nonexistent group chat
@@ -112,11 +196,10 @@ class GroupChatDetailViewTestCase(AuthAPITestCase):
         # Make the request
         response = self.auth_client.get(url)
 
-        # Verify response - should return 403 or 404 (depends on permission check order)
-        assert response.status_code in [
-            status.HTTP_403_FORBIDDEN,
-            status.HTTP_404_NOT_FOUND,
-        ]
+        # Verify response - should redirect to chat-home with error message
+        assert response.status_code == status.HTTP_302_FOUND
+        redirect_response = cast(HttpResponseRedirect, response)
+        assert redirect_response.url == reverse("chat-home")
 
     def test_chat_detail_with_multiple_members(self) -> None:
         """Test chat detail page with multiple chat members."""
@@ -140,3 +223,27 @@ class GroupChatDetailViewTestCase(AuthAPITestCase):
 
         # Verify the group chat has two members
         assert group_chat.members.count() == 2
+
+    def test_non_member_sees_restricted_access_elements(self) -> None:
+        """Test that authenticated non-members see appropriate access restriction elements."""
+        other_user = UserFactory.create()
+        other_client = self.get_client_for_user(other_user)
+
+        response = other_client.get(self.url)
+        content = response.content.decode()
+
+        # Should see access restriction message
+        assert "You are not a member" in content
+        assert "Contact a group administrator" in content
+        assert "return to your chats" in content
+
+    def test_member_sees_full_functionality(self) -> None:
+        """Test that members see full chat functionality."""
+        response = self.auth_client.get(self.url)
+        content = response.content.decode()
+
+        # Should see full chat interface
+        assert "messageForm" in content
+        assert "Loading messages..." in content
+        assert "Type your message here..." in content
+        assert "Connected" in content or "connectionStatus" in content

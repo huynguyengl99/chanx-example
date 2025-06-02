@@ -164,11 +164,29 @@
 
         // Check for notifications from redirects on page load
         document.addEventListener('DOMContentLoaded', function() {
+            // Handle chat notifications (existing functionality)
             const notification = sessionStorage.getItem('chat_notification');
             if (notification) {
                 showNotification(notification, 'warning');
                 sessionStorage.removeItem('chat_notification');
             }
+
+            // Handle Django messages from redirects
+            {% if messages %}
+                {% for message in messages %}
+                    {% if message.tags == 'error' %}
+                    showNotification('{{ message|escapejs }}', 'danger');
+                    {% elif message.tags == 'warning' %}
+                    showNotification('{{ message|escapejs }}', 'warning');
+                    {% elif message.tags == 'success' %}
+                    showNotification('{{ message|escapejs }}', 'success');
+                    {% elif message.tags == 'info' %}
+                    showNotification('{{ message|escapejs }}', 'info');
+                    {% else %}
+                    showNotification('{{ message|escapejs }}', 'info');
+                    {% endif %}
+                {% endfor %}
+            {% endif %}
         });
     </script>
 

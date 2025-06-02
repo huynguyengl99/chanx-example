@@ -32,7 +32,9 @@
                         <div id="groupChatList" class="list-group list-group-flush">
                             {% if user_chats %}
                                 {% for chat in user_chats %}
-                                <a href="{% url 'chat-group-detail' chat.pk %}" class="list-group-item list-group-item-action" data-group-id="{{ chat.id }}">
+                                <a href="{% url 'chat-group-detail' chat.pk %}"
+                                   class="list-group-item list-group-item-action"
+                                   data-group-id="{{ chat.id }}">
                                     <div class="d-flex w-100 justify-content-between">
                                         <h5 class="mb-1">{{ chat.title }}</h5>
                                         <small class="text-muted">{{ chat.updated_at|date:"M d, Y" }}</small>
@@ -103,7 +105,12 @@
             </div>
         </div>
     </div>
+
 </div>
+{% endblock %}
+
+{% block extra_css %}
+{{ block.super }}
 {% endblock %}
 
 {% block extra_js %}
@@ -174,7 +181,7 @@ class GroupChatClient {
     handleIncomingMessage(data) {
         switch (data.action) {
             case 'group_chat_updated':
-                this.updateGroupChatTimestamp(data.payload.group_pk, data.payload.updated_at);
+                this.updateGroupChatTimestamp(data.payload.groupPk, data.payload.updatedAt);
                 break;
 
             case 'refresh_group_chats':
@@ -230,17 +237,99 @@ class GroupChatClient {
         }
     }
 
-    refreshGroupChats() {
-        // Use regular AJAX to refresh the list instead of WebSockets
-        fetch('/api/chat/')
-            .then(response => response.json())
-            .then(data => {
-                window.location.reload(); // Simple approach - just reload the page
-                // For a more sophisticated approach, you could update the DOM without a page reload
-            })
-            .catch(error => {
-                console.error('Error refreshing group chat list:', error);
-            });
+    async refreshGroupChats() {
+        try {
+            // Fetch updated chat list from API
+            const response = await fetch('/api/chat/');
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            // Update the group chat list in the DOM
+            this.updateGroupChatList(data.results || data);
+
+        } catch (error) {
+            console.error('Error refreshing group chat list:', error);
+            // Fallback to page reload if AJAX fails
+            window.location.reload();
+        }
+    }
+
+    updateGroupChatList(chatList) {
+        if (!this.groupChatListContainer) return;
+
+        // If no chats, show empty state
+        if (!chatList || chatList.length === 0) {
+            this.groupChatListContainer.innerHTML = `
+                <div class="text-center py-5">
+                    <i class="bi bi-chat-left-text fs-1 text-muted"></i>
+                    <p class="mt-3 text-muted">You don't have any group chats yet.</p>
+                    <p>Create a new group chat to get started!</p>
+                </div>
+            `;
+            return;
+        }
+
+        // Generate HTML for chat list
+        let chatListHtml = '';
+        chatList.forEach(chat => {
+            const updatedDate = this.formatDateForDisplay(chat.updatedAt);
+            const memberCount = chat.memberCount || 0;
+
+            chatListHtml += `
+                <a href="/chat/${chat.id}/" class="list-group-item list-group-item-action" data-group-id="${chat.id}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">${this.escapeHtml(chat.title)}</h5>
+                        <small class="text-muted">${updatedDate}</small>
+                    </div>
+                    ${chat.description ? `<p class="mb-1 text-truncate">${this.escapeHtml(chat.description)}</p>` : ''}
+                    <small class="text-muted">
+                        ${memberCount} member${memberCount !== 1 ? 's' : ''}
+                    </small>
+                </a>
+            `;
+        });
+
+        // Update the container
+        this.groupChatListContainer.innerHTML = chatListHtml;
+    }
+
+    formatDateForDisplay(dateString) {
+        if (!dateString) return '';
+
+        try {
+            const date = new Date(dateString);
+            const now = new Date();
+
+            // If today, show relative time
+            if (date.toDateString() === now.toDateString()) {
+                const diffMs = now - date;
+                const diffMins = Math.floor(diffMs / 60000);
+
+                if (diffMins < 1) return 'just now';
+                if (diffMins < 60) return `${diffMins}m ago`;
+
+                return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // If this year, show month and day
+            if (date.getFullYear() === now.getFullYear()) {
+                return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+            }
+
+            // Otherwise show full date
+            return date.toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (e) {
+            return dateString;
+        }
+    }
+
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 
     formatDate(dateString) {
@@ -266,7 +355,7 @@ class GroupChatClient {
 
 // Initialize the client when the page loads
 document.addEventListener('DOMContentLoaded', () => {
-    const groupChatClient = new GroupChatClient();
+    new GroupChatClient();
 });
 </script>
 {% endif %}

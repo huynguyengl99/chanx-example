@@ -12,6 +12,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from chat.models import ChatMember, GroupChat
+from chat.tasks import task_handle_new_group_member
 from utils.request import AuthenticatedRequest
 
 
@@ -84,6 +85,8 @@ class HomeView(APIView):
                 chat_role=ChatMember.ChatMemberRole.OWNER,
                 nick_name=request_auth.user.email,
             )
+
+            task_handle_new_group_member(request_auth.user.pk, group_chat.pk)
 
             # Redirect to the new chat
             return redirect("chat-group-detail", pk=group_chat.pk)

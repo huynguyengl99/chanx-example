@@ -12,18 +12,24 @@
                 <a href="{% url 'chat-group-detail' group_chat.pk %}" class="btn btn-secondary">Back to Chat</a>
             </div>
 
-            {% if messages %}
-            <div class="messages mb-4">
-                {% for message in messages %}
-                <div
-                    class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %}">
-                    {{ message }}
-                </div>
-                {% endfor %}
+            {% if not request.user.is_authenticated %}
+            <div class="alert alert-info">
+                <h4 class="alert-heading">Member Management</h4>
+                <p>This page shows the members of "{{ group_chat.title }}".</p>
+                <hr>
+                <p class="mb-0">Please <a href="{% url 'rest_login' %}?next={{ request.path }}" class="alert-link">log in</a> to view detailed member information and manage this group.</p>
+            </div>
+            {% elif not is_member %}
+            <div class="alert alert-warning">
+                <h4 class="alert-heading">Access Restricted</h4>
+                <p>You are not a member of "{{ group_chat.title }}".</p>
+                <hr>
+                <p class="mb-0">Contact a group administrator to be added to this chat, or <a href="{% url 'chat-home' %}" class="alert-link">return to your chats</a>.</p>
             </div>
             {% endif %}
 
-            {% if can_manage %}
+
+            {% if request.user.is_authenticated and can_manage %}
             <div class="card mb-4">
                 <div class="card-header">
                     <h5 class="card-title mb-0">Add New Member</h5>
@@ -53,16 +59,42 @@
 
             <div class="card">
                 <div class="card-header d-flex justify-content-between align-items-center">
-                    <h5 class="card-title mb-0">Members ({{ members|length }})</h5>
+                    <h5 class="card-title mb-0">
+                        Members
+                        {% if request.user.is_authenticated and is_member %}
+                            ({{ members|length }})
+                        {% endif %}
+                    </h5>
+                    {% if request.user.is_authenticated and is_member %}
                     <span id="connectionStatus" class="badge bg-warning">Connecting...</span>
+                    {% endif %}
                 </div>
                 <div class="card-body p-0">
+                    {% if not request.user.is_authenticated %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-people fs-1 text-muted"></i>
+                        <p class="mt-3 text-muted">Log in to view member details and manage this group.</p>
+                        <a href="{% url 'rest_login' %}?next={{ request.path }}" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> Log In
+                        </a>
+                    </div>
+                    {% elif not is_member %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-lock fs-1 text-muted"></i>
+                        <p class="mt-3 text-muted">You need to be a member to view detailed member information.</p>
+                        <a href="{% url 'chat-home' %}" class="btn btn-outline-primary">
+                            <i class="bi bi-arrow-left"></i> Back to Your Chats
+                        </a>
+                    </div>
+                    {% else %}
                     <table class="table table-striped mb-0">
                         <thead>
                         <tr>
                             <th>Email</th>
                             <th>Role</th>
+                            {% if can_manage %}
                             <th>Actions</th>
+                            {% endif %}
                         </tr>
                         </thead>
                         <tbody id="membersList">
@@ -78,8 +110,9 @@
                                 <span class="badge bg-secondary">Member</span>
                                 {% endif %}
                             </td>
+                            {% if can_manage %}
                             <td>
-                                {% if can_manage and member.chat_role != roles.OWNER and member.user.pk != user_member.user.id %}
+                                {% if member.chat_role != roles.OWNER and member.user.pk != user_member.user.id %}
                                 <a href="{% url 'remove_member' group_chat.pk member.pk %}"
                                    class="btn btn-sm btn-danger remove-btn"
                                    onclick="return confirm('Are you sure you want to remove this member?')">
@@ -87,10 +120,12 @@
                                 </a>
                                 {% endif %}
                             </td>
+                            {% endif %}
                         </tr>
                         {% endfor %}
                         </tbody>
                     </table>
+                    {% endif %}
                 </div>
             </div>
         </div>
@@ -100,6 +135,7 @@
 
 {% block extra_js %}
 {{ block.super }}
+{% if request.user.is_authenticated and is_member %}
 <script>
     // Group chat ID
     const groupId = {{ group_chat.pk }};
@@ -193,4 +229,19 @@
         // }
     }
 </script>
+{% elif request.user.is_authenticated %}
+<script>
+// Simple script for authenticated users who are not members
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('User is authenticated but not a member of this group');
+});
+</script>
+{% else %}
+<script>
+// Simple script for unauthenticated users
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('User is not authenticated');
+});
+</script>
+{% endif %}
 {% endblock %}

@@ -5,7 +5,7 @@ from django.db import models
 
 from django_stubs_ext.db.models import TypedModelMeta
 
-if typing.TYPE_CHECKING:
+if typing.TYPE_CHECKING:  # pragma: no cover
     from accounts.models import User  # noqa: F401
     from chat.models import GroupChat  # noqa: F401
 

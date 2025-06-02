@@ -17,6 +17,11 @@ class ChatMemberFactory(BaseModelFactory[ChatMember]):
         return cls.create(chat_role=ChatMember.ChatMemberRole.OWNER, **kwargs)
 
     @classmethod
+    async def acreate_owner(cls, **kwargs: Any) -> ChatMember:
+        """Create a ChatMember with OWNER role."""
+        return await cls.acreate(chat_role=ChatMember.ChatMemberRole.OWNER, **kwargs)
+
+    @classmethod
     def create_admin(cls, **kwargs: Any) -> ChatMember:
         """Create a ChatMember with ADMIN role."""
         return cls.create(chat_role=ChatMember.ChatMemberRole.ADMIN, **kwargs)

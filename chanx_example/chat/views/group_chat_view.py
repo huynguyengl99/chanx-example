@@ -1,6 +1,6 @@
 from typing import cast
 
-from django.db.models import QuerySet
+from django.db.models import Count, QuerySet
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.serializers import BaseSerializer
 from rest_framework.viewsets import ModelViewSet
@@ -20,7 +20,13 @@ class GroupChatViewSet(ModelViewSet[GroupChat]):
 
     def get_queryset(self) -> QuerySet[GroupChat]:
         request = cast(AuthenticatedRequest, self.request)
-        return request.user.chat_groups.order_by("-updated_at").all()
+        return (
+            request.user.chat_groups.annotate(
+                member_count=Count("members")
+            )  # Optimize member count queries
+            .order_by("-updated_at")
+            .all()
+        )
 
     def perform_create(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, serializer: BaseSerializer[GroupChat]
@@ -39,9 +45,6 @@ class GroupChatViewSet(ModelViewSet[GroupChat]):
 
         # Trigger tasks to handle WebSocket notifications
         task_handle_new_group_member(request.user.pk, group_chat.pk)
-
-        # Also notify about the new group chat
-        task_handle_group_chat_update(group_chat.pk)
 
     def perform_update(self, serializer: BaseSerializer[GroupChat]) -> None:
         """Handle group chat updates and notify members via WebSockets."""

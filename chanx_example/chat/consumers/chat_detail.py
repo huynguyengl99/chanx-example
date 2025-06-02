@@ -1,4 +1,6 @@
-from typing import Any, cast
+from typing import Any, assert_never
+
+from rest_framework.permissions import IsAuthenticated
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
@@ -10,16 +12,14 @@ from chat.messages.chat import (
     MemberAddedMessage,
     MemberRemovedMessage,
     MemberRemovedPayload,
-    NewChatMessage,
     NewChatMessageEvent,
     NotifyMemberAddedEvent,
     NotifyMemberRemovedEvent,
     UserRemovedFromGroupMessage,
 )
 from chat.messages.member import MemberMessage, OutgoingMemberMessage
-from chat.models import ChatMember, ChatMessage, GroupChat
+from chat.models import ChatMember, GroupChat
 from chat.permissions import IsGroupChatMember
-from chat.serializers import ChatMessageSerializer
 from chat.utils import name_group_chat
 
 
@@ -30,7 +30,7 @@ class ChatDetailConsumer(
 ):
     """WebSocket consumer for group chat details."""
 
-    permission_classes = [IsGroupChatMember]
+    permission_classes = [IsAuthenticated, IsGroupChatMember]
     queryset = GroupChat.objects.get_queryset()
 
     member: ChatMember
@@ -54,24 +54,8 @@ class ChatDetailConsumer(
         match message:
             case PingMessage():
                 await self.send_message(PongMessage())
-            case NewChatMessage(payload=message_payload):
-                assert self.obj
-                new_message = await ChatMessage.objects.acreate(
-                    content=message_payload.content,
-                    group_chat_id=self.obj.pk,
-                    sender=self.member,
-                )
-                groups = message_payload.groups
-
-                message_serializer = ChatMessageSerializer(
-                    instance=new_message, context={"request": self.request}
-                )
-
-                await self.send_group_message(
-                    MemberMessage(payload=cast(Any, message_serializer.data)),
-                    groups=groups,
-                    exclude_current=False,
-                )
+            case _:
+                assert_never(message)
 
     async def receive_event(self, event: ChatDetailEvent) -> None:
         match event:
@@ -88,6 +72,8 @@ class ChatDetailConsumer(
                         is_current=False,
                     )
                 )
+            case _:
+                assert_never(event)
 
     async def handle_notify_member_remove_event(
         self, payload: MemberRemovedPayload
@@ -102,6 +88,5 @@ class ChatDetailConsumer(
                     )
                 )
             )
-            await self.close()
             return
         await self.send_message(MemberRemovedMessage(payload=payload))
