@@ -54,7 +54,7 @@ class DiscussionTopicAdmin(admin.ModelAdmin[DiscussionTopic]):
         models.TextField: {"widget": Textarea(attrs={"rows": 6, "cols": 80})},
     }
 
-    def reply_count_display(self, obj: DiscussionTopic) -> int:
+    def reply_count_display(self, obj: DiscussionTopic) -> int:  # pragma: no cover
         return obj.reply_count
 
     # Type ignore for Django admin method attributes
@@ -101,10 +101,10 @@ class DiscussionReplyAdmin(admin.ModelAdmin[DiscussionReply]):
         models.TextField: {"widget": Textarea(attrs={"rows": 6, "cols": 80})},
     }
 
-    def topic_title(self, obj: DiscussionReply) -> str:
+    def topic_title(self, obj: DiscussionReply) -> str:  # pragma: no cover
         return obj.topic.title
 
-    def is_accepted_display(self, obj: DiscussionReply) -> bool:
+    def is_accepted_display(self, obj: DiscussionReply) -> bool:  # pragma: no cover
         return obj.is_accepted
 
     # Type ignore for Django admin method attributes

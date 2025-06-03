@@ -6,7 +6,7 @@ from django.db import models
 
 from django_stubs_ext.db.models import TypedModelMeta
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from accounts.models import User  # noqa: F401
     from discussion.models import DiscussionTopic  # noqa: F401
 
@@ -35,9 +35,6 @@ class DiscussionReply(models.Model):
 
     class Meta(TypedModelMeta):
         ordering = ["-vote_count", "created_at"]
-
-    def __str__(self) -> str:
-        return f"Reply by {self.author.email} on {self.topic.title}"
 
     @property
     def is_accepted(self) -> bool:

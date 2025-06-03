@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING
 from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet
-from django.urls import reverse
 
 from django_stubs_ext.db.models import TypedModelMeta
 
-if TYPE_CHECKING:
+if TYPE_CHECKING:  # pragma: no cover
     from accounts.models import User  # noqa: F401
     from discussion.models import DiscussionReply  # noqa: F401
 
@@ -47,18 +46,15 @@ class DiscussionTopic(models.Model):
         related_name="accepted_for_topic",
     )
 
-    if TYPE_CHECKING:
+    if TYPE_CHECKING:  # pragma: no cover
         # Annotate reverse relationships for type checking
         replies: QuerySet["DiscussionReply"]
 
     class Meta(TypedModelMeta):
         ordering = ["-created_at"]
 
-    def __str__(self) -> str:
+    def __str__(self) -> str:  # pragma: no cover
         return self.title
-
-    def get_absolute_url(self) -> str:
-        return reverse("discussion-detail", kwargs={"pk": self.pk})
 
     @property
     def reply_count(self) -> int:

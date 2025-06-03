@@ -1,35 +1,16 @@
 from typing import Any, Literal
 
-from chanx.messages.base import BaseChannelEvent, BaseGroupMessage, BaseMessage
+from chanx.messages.base import BaseChannelEvent, BaseGroupMessage
 from pydantic import BaseModel
 
 from .common_messages import (
     CommonIncomingMessage,
-    VotePayload,
     VoteUpdatedMessage,
     VoteUpdateEvent,
 )
 
 
 # Payloads for topic detail view message types
-class NewReplyPayload(BaseModel):
-    """Payload for creating a new reply to a topic."""
-
-    content: str
-
-
-class AcceptAnswerPayload(BaseModel):
-    """Payload for accepting an answer."""
-
-    reply_id: int
-
-
-class UnacceptAnswerPayload(BaseModel):
-    """Payload for unaccepting an answer."""
-
-    reply_id: int
-
-
 class NewReplyEventPayload(BaseModel):
     """Payload for new reply channel events."""
 
@@ -60,35 +41,6 @@ class AnswerUnacceptedEventPayload(BaseModel):
     topic_title: str
     reply_id: int
     reply_author: str
-
-
-# Incoming WebSocket messages for topic detail view
-class NewReplyMessage(BaseMessage):
-    """Create a new reply to a topic."""
-
-    action: Literal["new_reply"] = "new_reply"
-    payload: NewReplyPayload
-
-
-class VoteMessage(BaseMessage):
-    """Vote on a topic or reply."""
-
-    action: Literal["vote"] = "vote"
-    payload: VotePayload
-
-
-class AcceptAnswerMessage(BaseMessage):
-    """Accept a reply as the answer."""
-
-    action: Literal["accept_answer"] = "accept_answer"
-    payload: AcceptAnswerPayload
-
-
-class UnacceptAnswerMessage(BaseMessage):
-    """Unaccept a reply as the answer."""
-
-    action: Literal["unaccept_answer"] = "unaccept_answer"
-    payload: UnacceptAnswerPayload
 
 
 # Outgoing group messages for topic detail view
@@ -136,13 +88,7 @@ class AnswerUnacceptedEvent(BaseChannelEvent):
 
 
 # Union of all incoming messages for topic detail view
-TopicDetailMessage = (
-    NewReplyMessage
-    | VoteMessage
-    | AcceptAnswerMessage
-    | UnacceptAnswerMessage
-    | CommonIncomingMessage
-)
+TopicDetailMessage = CommonIncomingMessage
 
 
 # Union of all outgoing group messages for topic detail view

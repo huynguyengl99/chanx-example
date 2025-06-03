@@ -5,22 +5,15 @@ from .common_messages import (
     VoteUpdateEvent,
 )
 from .topic_detail_messages import (
-    AcceptAnswerMessage,
-    AcceptAnswerPayload,
     AnswerAcceptedEvent,
     AnswerAcceptedMessage,
     AnswerUnacceptedEvent,
     AnswerUnacceptedMessage,
     NewReplyEvent,
-    NewReplyMessage,
-    NewReplyPayload,
     ReplyCreatedMessage,
     TopicDetailEvent,
     TopicDetailGroupMessage,
     TopicDetailMessage,
-    UnacceptAnswerMessage,
-    UnacceptAnswerPayload,
-    VoteMessage,
 )
 from .topic_list_messages import (
     NewTopicEvent,
@@ -47,20 +40,13 @@ __all__ = [
     "TopicListGroupMessage",
     "TopicListMessage",
     # Topic detail messages
-    "AcceptAnswerMessage",
-    "AcceptAnswerPayload",
     "AnswerAcceptedEvent",
     "AnswerAcceptedMessage",
     "AnswerUnacceptedEvent",
     "AnswerUnacceptedMessage",
     "NewReplyEvent",
-    "NewReplyMessage",
-    "NewReplyPayload",
     "ReplyCreatedMessage",
     "TopicDetailEvent",
     "TopicDetailGroupMessage",
     "TopicDetailMessage",
-    "UnacceptAnswerMessage",
-    "UnacceptAnswerPayload",
-    "VoteMessage",
 ]

@@ -1,10 +1,10 @@
-from typing import Any
+from typing import Any, assert_never
 
 from rest_framework.permissions import IsAuthenticated
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
-from chanx.messages.outgoing import ErrorMessage, PongMessage
+from chanx.messages.outgoing import PongMessage
 
 from discussion.messages.common_messages import (
     VoteUpdatedMessage,
@@ -18,7 +18,6 @@ from discussion.messages.topic_detail_messages import (
 )
 from discussion.messages.topic_list_messages import (
     NewTopicEvent,
-    NewTopicMessage,
     TopicCreatedMessage,
     TopicListEvent,
     TopicListGroupMessage,
@@ -46,17 +45,8 @@ class DiscussionListConsumer(
         match message:
             case PingMessage():
                 await self.send_message(PongMessage())
-
-            # Remove WebSocket topic creation to prevent duplication
-            # Topics should only be created via REST API
-            case NewTopicMessage():
-                await self.send_message(
-                    ErrorMessage(
-                        payload={
-                            "detail": "Please use the API endpoint for creating topics"
-                        }
-                    )
-                )
+            case _:
+                assert_never(message)
 
     async def receive_event(self, event: TopicListEvent) -> None:
         """Handle channel events and broadcast to connected clients."""
@@ -75,3 +65,6 @@ class DiscussionListConsumer(
             # Answer unacceptance events are handled by topic-specific consumers
             case AnswerUnacceptedEvent(payload=payload):
                 await self.send_message(AnswerUnacceptedMessage(payload=payload))
+
+            case _:
+                assert_never(event)

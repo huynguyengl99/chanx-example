@@ -17,7 +17,7 @@ from discussion.serializers.reply_serializers import (
     DiscussionReplySerializer,
 )
 from discussion.serializers.voting_serializers import VoteSerializer
-from discussion.tasks.reply_tasks import (
+from discussion.tasks import (
     task_broadcast_new_reply,
     task_broadcast_vote_update,
 )

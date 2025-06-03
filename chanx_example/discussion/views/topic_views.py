@@ -18,7 +18,7 @@ from discussion.serializers.topic_serializers import (
     DiscussionTopicListSerializer,
 )
 from discussion.serializers.voting_serializers import VoteSerializer
-from discussion.tasks.topic_tasks import (
+from discussion.tasks import (
     task_broadcast_answer_accepted,
     task_broadcast_answer_unaccepted,
     task_broadcast_new_topic,

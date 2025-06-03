@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 
 from discussion.models import DiscussionTopic
 from discussion.serializers.topic_serializers import CreateDiscussionTopicSerializer
-from discussion.tasks.topic_tasks import task_broadcast_new_topic
+from discussion.tasks import task_broadcast_new_topic
 from utils.request import AuthenticatedRequest
 
 

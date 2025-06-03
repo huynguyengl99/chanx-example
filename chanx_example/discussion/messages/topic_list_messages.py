@@ -54,7 +54,7 @@ class NewTopicEvent(BaseChannelEvent):
 
 
 # Union of all incoming messages for topic list view
-TopicListMessage = NewTopicMessage | CommonIncomingMessage
+TopicListMessage = CommonIncomingMessage
 
 
 # Union of all outgoing group messages for topic list view
