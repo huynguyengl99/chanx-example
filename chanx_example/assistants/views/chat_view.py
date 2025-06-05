@@ -54,40 +54,47 @@ class AssistantChatView(APIView):
         self, request: HttpRequest, conversation_id: UUID
     ) -> Response | HttpResponseRedirect:
         """Handle specific conversation page (/assistants/<id>/)."""
+
+        # Get conversation or redirect if not found
+        try:
+            conversation = AssistantConversation.objects.get(id=conversation_id)
+        except AssistantConversation.DoesNotExist:
+            return redirect("assistant_chat")
+
+        # Check access permissions
+        if not self._has_conversation_access(request, conversation):
+            return redirect("assistant_chat")
+
+        # Build context
         context: dict[str, Any] = {
             "is_root_page": False,
-            "conversation": None,
-            "conversations": [],
+            "conversation": conversation,
+            "conversations": self._get_user_conversations(request),
             "is_authenticated": request.user.is_authenticated,
         }
 
+        return Response(context, template_name="assistants/chat.html")
+
+    def _has_conversation_access(
+        self, request: HttpRequest, conversation: AssistantConversation
+    ) -> bool:
+        """Check if the current user has access to the conversation."""
+        if request.user.is_authenticated:
+            # Authenticated users can only access their own conversations
+            return conversation.user == request.user
+        else:
+            # Unauthenticated users can only access anonymous conversations
+            return conversation.user is None
+
+    def _get_user_conversations(
+        self, request: HttpRequest
+    ) -> list[AssistantConversation]:
+        """Get conversations for sidebar (only for authenticated users)."""
         if request.user.is_authenticated:
             request_auth = cast(AuthenticatedRequest, request)
-
-            # Get the specific conversation
-            try:
-                conversation = AssistantConversation.objects.get(
-                    id=conversation_id, user=request_auth.user
+            return list(
+                AssistantConversation.objects.filter(user=request_auth.user).order_by(
+                    "-updated_at"
                 )
-                context["conversation"] = conversation
-
-                # Get user's conversations for sidebar
-                conversations = AssistantConversation.objects.filter(
-                    user=request_auth.user
-                ).order_by("-updated_at")
-                context["conversations"] = conversations
-
-            except AssistantConversation.DoesNotExist:
-                # Conversation doesn't exist or doesn't belong to user
-                return redirect("assistant_chat")
-        else:
-            # Anonymous user trying to access a specific conversation
-            # Check if the conversation exists (but don't check ownership)
-            try:
-                conversation = AssistantConversation.objects.get(id=conversation_id)
-                context["conversation"] = conversation
-            except AssistantConversation.DoesNotExist:
-                # Conversation doesn't exist, redirect to root
-                return redirect("assistant_chat")
-
-        return Response(context, template_name="assistants/chat.html")
+            )
+        return []
