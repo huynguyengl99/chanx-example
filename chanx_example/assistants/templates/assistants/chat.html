@@ -1,7 +1,9 @@
 {% extends "assistants/base.html" %}
 {% load static %}
 
-{% block title %}AI Assistant - Chanx Example{% endblock %}
+{% block title %}
+{% if conversation %}{{ conversation.title|default:"AI Assistant" }}{% else %}AI Assistant{% endif %} - Chanx Example
+{% endblock %}
 
 {% block extra_css %}
 {{ block.super }}
@@ -13,54 +15,156 @@
 {% endblock %}
 
 {% block content %}
-<div class="container py-4">
-    <div class="chat-container">
-        <div class="chat-header">
-            <h1>AI Assistant</h1>
-            <div class="connection-status" id="connectionStatus">Connecting...</div>
-        </div>
+<!-- Sidebar Backdrop for Mobile -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
 
-        <div class="chat-messages" id="chatMessages">
-            <div class="message assistant">
-                <div class="message-content">
-                    Hello! I'm your AI assistant. How can I help you today?
-                    <br><br>
-                    I can format my responses with:
-                    <ul>
-                        <li><strong>Markdown formatting</strong></li>
-                        <li><code>Syntax highlighting</code> for code</li>
-                        <li>Lists, tables, and more!</li>
-                    </ul>
+{% if is_authenticated %}
+<!-- Sidebar for Authenticated Users -->
+<div class="sidebar" id="sidebar">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Conversations</h5>
+        <button id="newConversationBtn" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus"></i> New
+        </button>
+    </div>
+    <div class="list-group list-group-flush" id="conversationsList">
+        {% for conv in conversations %}
+        <a href="{% url 'assistant_conversation' conv.id %}"
+           class="list-group-item list-group-item-action {% if conversation and conversation.id == conv.id %}active{% endif %}">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ conv.title|default:"New Conversation" }}</h6>
+                <small class="text-muted">{{ conv.updated_at|timesince }} ago</small>
+            </div>
+            {% with last_message=conv.messages.last %}
+            {% if last_message %}
+            <p class="mb-1 small text-muted text-truncate">
+                {% if last_message.content|length > 100 %}
+                    {{ last_message.content|slice:":100" }}...
+                {% else %}
+                    {{ last_message.content }}
+                {% endif %}
+            </p>
+            {% endif %}
+            {% endwith %}
+        </a>
+        {% empty %}
+        <div class="list-group-item text-center text-muted">
+            <i class="bi bi-chat-left-text fs-4"></i>
+            <p class="mb-0 mt-2">No conversations yet</p>
+            <small>Start a new conversation to begin!</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggle" id="sidebarToggle">
+    <i class="bi bi-chevron-left" id="toggleIcon"></i>
+</button>
+{% endif %}
+
+<!-- Main Content Wrapper -->
+<div class="main-content-wrapper">
+    <div class="container py-4">
+        <div class="chat-container">
+            <div class="chat-header">
+                <h1>
+                    {% if conversation %}
+                        {{ conversation.title|default:"AI Assistant" }}
+                        {% if not is_authenticated %}
+                            <small class="text-muted">(Anonymous)</small>
+                        {% endif %}
+                    {% else %}
+                        AI Assistant
+                    {% endif %}
+                </h1>
+                <div class="connection-status">
+                    <span id="connectionStatus">Connecting...</span>
+                    {% if not is_authenticated and conversation %}
+                    <div class="mt-1">
+                        <small class="text-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            This anonymous conversation won't be saved.
+                            <a href="{% url 'rest_login' %}?next={{ request.path }}">Log in</a> to save your chats.
+                        </small>
+                    </div>
+                    {% endif %}
                 </div>
             </div>
-        </div>
 
-        <div class="chat-input-container">
-            <form class="chat-input-form" id="chatForm">
-                <textarea
-                    class="chat-input"
-                    id="chatInput"
-                    placeholder="Type your message (markdown supported)..."
-                    rows="1"
-                ></textarea>
-                <button type="submit" class="send-button" id="sendButton">
-                    <span>➤</span>
-                </button>
-            </form>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message assistant">
+                    <div class="message-header">
+                        <div class="avatar">AI</div>
+                        <span class="sender-name">Assistant</span>
+                        <span class="timestamp">Just now</span>
+                    </div>
+                    <div class="message-content">
+                        Hello! I'm your AI assistant. How can I help you today?
+                        <br><br>
+                        {% if conversation %}
+                            {% if is_authenticated %}
+                                You're in conversation: <strong>{{ conversation.title|default:"New Conversation" }}</strong>
+                            {% else %}
+                                You're in an anonymous conversation. Your messages won't be saved.
+                            {% endif %}
+                        {% endif %}
+                        <br><br>
+                        I can format my responses with:
+                        <ul>
+                            <li><strong>Markdown formatting</strong></li>
+                            <li><code>Syntax highlighting</code> for code</li>
+                            <li>Lists, tables, and more!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-input-container">
+                <form class="chat-input-form" id="chatForm">
+                    {% csrf_token %}
+                    <textarea
+                        class="chat-input"
+                        id="chatInput"
+                        placeholder="Type your message (markdown supported)..."
+                        rows="1"
+                        {% if not conversation %}disabled{% endif %}
+                    ></textarea>
+                    <button type="submit" class="send-button" id="sendButton"
+                            {% if not conversation %}disabled{% endif %}>
+                        <span>➤</span>
+                    </button>
+                </form>
+                {% if not conversation %}
+                <div class="text-center mt-2">
+                    <small class="text-muted">
+                        <a href="{% url 'assistant_chat' %}">Go back</a> to start a new conversation
+                    </small>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+
+<!-- Hidden data for JavaScript -->
+<script type="application/json" id="appData">
+{
+    "isAuthenticated": {% if is_authenticated %}true{% else %}false{% endif %},
+    "conversationId": {% if conversation %}"{{ conversation.id }}"{% else %}null{% endif %},
+    "isAnonymous": {% if conversation and not conversation.user %}true{% else %}false{% endif %},
+    "csrfToken": "{{ csrf_token }}"
+}
+</script>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
 <script>
     // Configure marked for better markdown parsing
     marked.setOptions({
-        breaks: true, // Support line breaks
-        gfm: true,    // GitHub Flavored Markdown
+        breaks: true,
+        gfm: true,
         highlight: function(code, lang) {
-            // Use Prism for syntax highlighting
             if (lang && Prism.languages[lang]) {
                 return Prism.highlight(code, Prism.languages[lang], lang);
             }
@@ -68,16 +172,34 @@
         }
     });
 
-    class AssistantChat {
+    // Function to format current time
+    function getCurrentTime() {
+        return new Date().toLocaleTimeString([], {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    class AssistantChatManager {
         constructor() {
             this.socket = null;
-            this.conversationHistory = [];
             this.currentStreamingMessage = null;
             this.currentStreamingElement = null;
             this.currentMessageId = null;
 
+            // Get app data from template
+            const appDataElement = document.getElementById('appData');
+            this.appData = appDataElement ? JSON.parse(appDataElement.textContent) : {};
+
             this.initializeElements();
-            this.initializeWebSocket();
+            this.initializeSidebar();
+
+            // Only initialize WebSocket and load messages if we have a conversation
+            if (this.appData.conversationId) {
+                this.initializeWebSocket();
+                this.loadMessages();
+            }
+
             this.attachEventListeners();
         }
 
@@ -87,11 +209,33 @@
             this.chatInput = document.getElementById('chatInput');
             this.sendButton = document.getElementById('sendButton');
             this.connectionStatus = document.getElementById('connectionStatus');
+            this.newConversationBtn = document.getElementById('newConversationBtn');
+
+            // Sidebar elements
+            this.sidebar = document.getElementById('sidebar');
+            this.sidebarToggle = document.getElementById('sidebarToggle');
+            this.toggleIcon = document.getElementById('toggleIcon');
+            this.backdrop = document.getElementById('sidebarBackdrop');
+        }
+
+        initializeSidebar() {
+            if (!this.appData.isAuthenticated || !this.sidebar) return;
+
+            this.isCollapsed = false;
+            this.updateSidebarForScreenSize();
+
+            // Restore saved state on desktop
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true' && window.innerWidth > 768) {
+                this.collapseSidebar();
+            }
         }
 
         initializeWebSocket() {
+            if (!this.appData.conversationId) return;
+
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const wsUrl = `${protocol}//${window.location.host}/ws/assistants/`;
+            const wsUrl = `${protocol}//${window.location.host}/ws/assistants/${this.appData.conversationId}/`;
 
             this.socket = new WebSocket(wsUrl);
 
@@ -101,6 +245,7 @@
 
             this.socket.addEventListener('close', () => {
                 this.updateConnectionStatus('Disconnected', 'red');
+                setTimeout(() => this.initializeWebSocket(), 5000);
             });
 
             this.socket.addEventListener('error', () => {
@@ -113,58 +258,241 @@
         }
 
         attachEventListeners() {
-            this.chatForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.sendMessage();
-            });
+            // Sidebar events
+            if (this.sidebarToggle && this.appData.isAuthenticated) {
+                this.sidebarToggle.addEventListener('click', () => {
+                    this.toggleSidebar();
+                });
+            }
 
-            this.chatInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    this.sendMessage();
+            if (this.backdrop && this.appData.isAuthenticated) {
+                this.backdrop.addEventListener('click', () => {
+                    this.collapseSidebar();
+                });
+            }
+
+            // Window resize
+            window.addEventListener('resize', () => {
+                if (this.appData.isAuthenticated) {
+                    this.updateSidebarForScreenSize();
                 }
             });
 
-            // Auto-resize textarea
-            this.chatInput.addEventListener('input', () => {
-                this.chatInput.style.height = 'auto';
-                this.chatInput.style.height = this.chatInput.scrollHeight + 'px';
+            // Chat form submission
+            if (this.chatForm) {
+                this.chatForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.sendMessage();
+                });
+            }
+
+            // Enter key handling
+            if (this.chatInput) {
+                this.chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                // Auto-resize textarea
+                this.chatInput.addEventListener('input', () => {
+                    this.chatInput.style.height = 'auto';
+                    this.chatInput.style.height = this.chatInput.scrollHeight + 'px';
+                });
+            }
+
+            // New conversation button
+            if (this.newConversationBtn && this.appData.isAuthenticated) {
+                this.newConversationBtn.addEventListener('click', () => {
+                    this.createNewConversation();
+                });
+            }
+
+            // Handle conversation navigation on mobile
+            const conversationLinks = document.querySelectorAll('.list-group-item-action');
+            conversationLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth <= 768) {
+                        this.collapseSidebar();
+                    }
+                });
             });
+        }
+
+        // Sidebar management
+        toggleSidebar() {
+            if (this.isCollapsed) {
+                this.expandSidebar();
+            } else {
+                this.collapseSidebar();
+            }
+        }
+
+        collapseSidebar() {
+            if (!this.sidebar) return;
+
+            this.sidebar.classList.add('collapsed');
+            if (this.toggleIcon) {
+                this.toggleIcon.className = 'bi bi-chevron-right';
+            }
+            if (this.backdrop) {
+                this.backdrop.classList.remove('show');
+            }
+            this.isCollapsed = true;
+
+            // Only save state on desktop
+            if (window.innerWidth > 768) {
+                localStorage.setItem('sidebarCollapsed', 'true');
+            }
+        }
+
+        expandSidebar() {
+            if (!this.sidebar) return;
+
+            this.sidebar.classList.remove('collapsed');
+            if (this.toggleIcon) {
+                this.toggleIcon.className = 'bi bi-chevron-left';
+            }
+
+            // Show backdrop only on mobile
+            if (window.innerWidth <= 768 && this.backdrop) {
+                this.backdrop.classList.add('show');
+            }
+
+            this.isCollapsed = false;
+
+            // Only save state on desktop
+            if (window.innerWidth > 768) {
+                localStorage.setItem('sidebarCollapsed', 'false');
+            }
+        }
+
+        updateSidebarForScreenSize() {
+            if (window.innerWidth <= 768) {
+                // Mobile: Always collapsed by default
+                this.collapseSidebar();
+            } else {
+                // Desktop: Restore saved state
+                const savedState = localStorage.getItem('sidebarCollapsed');
+                if (savedState === 'true') {
+                    this.collapseSidebar();
+                } else {
+                    this.expandSidebar();
+                }
+                // Remove mobile backdrop
+                if (this.backdrop) {
+                    this.backdrop.classList.remove('show');
+                }
+            }
         }
 
         updateConnectionStatus(status, color) {
-            this.connectionStatus.textContent = status;
-            this.connectionStatus.style.color = color;
+            if (this.connectionStatus) {
+                this.connectionStatus.textContent = status;
+                this.connectionStatus.style.color = color;
+            }
         }
 
-        sendMessage() {
+        async loadMessages() {
+            if (!this.appData.conversationId) return;
+
+            try {
+                let apiUrl;
+                if (this.appData.isAuthenticated) {
+                    apiUrl = `/api/assistants/conversations/${this.appData.conversationId}/messages/`;
+                } else {
+                    apiUrl = `/api/assistants/anonymous/${this.appData.conversationId}/messages/`;
+                }
+
+                const response = await fetch(apiUrl);
+                if (!response.ok) {
+                    throw new Error('Failed to load messages');
+                }
+
+                const data = await response.json();
+
+                // Clear existing messages except the welcome message
+                const welcomeMessage = this.chatMessages.querySelector('.message.assistant');
+                this.chatMessages.innerHTML = '';
+                if (welcomeMessage) {
+                    this.chatMessages.appendChild(welcomeMessage);
+                }
+
+                // Add historical messages
+                data.results.forEach(message => {
+                    this.addMessageToDOM(message.messageType, message.content, message.createdAt);
+                });
+
+                this.scrollToBottom();
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        async createNewConversation() {
+            if (!this.appData.isAuthenticated) return;
+
+            try {
+                const response = await fetch('/api/assistants/conversations/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.appData.csrfToken
+                    },
+                    body: JSON.stringify({})
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to create conversation');
+                }
+
+                const conversation = await response.json();
+                window.location.href = `/assistants/${conversation.id}/`;
+            } catch (error) {
+                console.error('Error creating conversation:', error);
+                alert('Failed to create new conversation');
+            }
+        }
+
+        async sendMessage() {
             const message = this.chatInput.value.trim();
-            if (!message || !this.socket || this.socket.readyState !== WebSocket.OPEN) {
+            if (!message || !this.appData.conversationId) {
                 return;
             }
 
-            // Add user message to chat
-            this.addMessage('user', message);
+            this.addMessageToDOM('user', message);
 
-            // Add to conversation history
-            this.conversationHistory.push({
-                role: 'user',
-                content: message
-            });
-
-            // Send message to server
-            this.socket.send(JSON.stringify({
-                action: 'new_message',
-                payload: {
-                    content: message,
-                    conversation_history: this.conversationHistory
-                }
-            }));
-
-            // Clear input and disable send button
             this.chatInput.value = '';
             this.chatInput.style.height = 'auto';
             this.sendButton.disabled = true;
+
+            try {
+                let apiUrl;
+                if (this.appData.isAuthenticated) {
+                    apiUrl = `/api/assistants/conversations/${this.appData.conversationId}/messages/`;
+                } else {
+                    apiUrl = `/api/assistants/anonymous/${this.appData.conversationId}/messages/`;
+                }
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': this.appData.csrfToken
+                    },
+                    body: JSON.stringify({ content: message })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to send message');
+                }
+
+            } catch (error) {
+                console.error('Error sending message:', error);
+                this.showError('Failed to send message. Please try again.');
+                this.sendButton.disabled = false;
+            }
         }
 
         handleMessage(data) {
@@ -179,12 +507,16 @@
                 case 'streaming':
                     this.handleStreamingMessage(data.payload);
                     break;
-                case 'reply':
-                    this.addMessage('assistant', data.payload.content);
-                    this.sendButton.disabled = false;
+                case 'new_assistant_message':
+                    if (data.payload.messageType === 'assistant') {
+                        if (!this.currentStreamingElement) {
+                            this.addMessageToDOM('assistant', data.payload.content);
+                        }
+                        this.sendButton.disabled = false;
+                    }
                     break;
                 case 'error':
-                    this.showError('Error: ' + JSON.stringify(data.payload));
+                    this.showError('Error: ' + data.payload.content);
                     this.sendButton.disabled = false;
                     break;
             }
@@ -194,52 +526,36 @@
             const { content, isComplete, messageId } = payload;
 
             if (!isComplete) {
-                // If this is a new message or different message ID
                 if (!this.currentStreamingElement || this.currentMessageId !== messageId) {
                     this.currentMessageId = messageId;
                     this.currentStreamingMessage = '';
                     this.currentStreamingElement = this.createStreamingMessage();
                 }
 
-                // Append content to current streaming message
                 this.currentStreamingMessage += content;
                 this.updateStreamingMessage(this.currentStreamingElement, this.currentStreamingMessage);
             } else {
-                // Message complete
                 if (this.currentStreamingElement) {
                     this.finalizeStreamingMessage(this.currentStreamingElement);
 
-                    // Add to conversation history
-                    this.conversationHistory.push({
-                        role: 'assistant',
-                        content: this.currentStreamingMessage
-                    });
-
-                    // Reset streaming state
                     this.currentStreamingElement = null;
                     this.currentStreamingMessage = null;
                     this.currentMessageId = null;
                 }
 
-                // Re-enable send button
                 this.sendButton.disabled = false;
             }
         }
 
         parseMarkdown(text) {
-            // Parse markdown and add syntax highlighting
             const html = marked.parse(text);
-
-            // Create a temporary element to process the HTML
             const tempDiv = document.createElement('div');
             tempDiv.innerHTML = html;
 
-            // Add copy buttons to code blocks
             tempDiv.querySelectorAll('pre > code').forEach((codeBlock) => {
                 const pre = codeBlock.parentElement;
                 const language = codeBlock.className.replace('language-', '') || 'text';
 
-                // Create header with language and copy button
                 const header = document.createElement('div');
                 header.className = 'code-header';
                 header.innerHTML = `
@@ -247,7 +563,6 @@
                     <button class="copy-button" onclick="this.copyCode()">Copy</button>
                 `;
 
-                // Add copy functionality
                 const copyButton = header.querySelector('.copy-button');
                 copyButton.copyCode = () => {
                     navigator.clipboard.writeText(codeBlock.textContent).then(() => {
@@ -260,7 +575,6 @@
                     });
                 };
 
-                // Insert header before pre element
                 pre.parentNode.insertBefore(header, pre);
                 pre.style.borderRadius = '0 0 8px 8px';
             });
@@ -272,8 +586,28 @@
             const messageDiv = document.createElement('div');
             messageDiv.className = 'message assistant streaming';
 
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-header';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = 'AI';
+
+            const senderName = document.createElement('span');
+            senderName.className = 'sender-name';
+            senderName.textContent = 'Assistant';
+
+            const timestamp = document.createElement('span');
+            timestamp.className = 'timestamp';
+            timestamp.textContent = getCurrentTime();
+
+            headerDiv.appendChild(avatar);
+            headerDiv.appendChild(senderName);
+            headerDiv.appendChild(timestamp);
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
+            messageDiv.appendChild(headerDiv);
             messageDiv.appendChild(contentDiv);
 
             const typingIndicator = document.createElement('span');
@@ -290,7 +624,6 @@
             const contentDiv = element.querySelector('.message-content');
             const typingIndicator = contentDiv.querySelector('.typing-indicator');
 
-            // For streaming, we show raw text first, then parse markdown when complete
             contentDiv.textContent = content;
             contentDiv.appendChild(typingIndicator);
 
@@ -306,35 +639,57 @@
                 typingIndicator.remove();
             }
 
-            // Parse markdown and apply syntax highlighting
             contentDiv.innerHTML = this.parseMarkdown(this.currentStreamingMessage);
 
-            // Apply Prism highlighting to any code blocks
             contentDiv.querySelectorAll('pre code').forEach((block) => {
                 Prism.highlightElement(block);
             });
         }
 
-        addMessage(sender, content) {
+        addMessageToDOM(sender, content, createdAt = null) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${sender}`;
+
+            const headerDiv = document.createElement('div');
+            headerDiv.className = 'message-header';
+
+            const avatar = document.createElement('div');
+            avatar.className = 'avatar';
+            avatar.textContent = sender === 'user' ? 'U' : 'AI';
+
+            const senderName = document.createElement('span');
+            senderName.className = 'sender-name';
+            senderName.textContent = sender === 'user' ? 'You' : 'Assistant';
+
+            const timestamp = document.createElement('span');
+            timestamp.className = 'timestamp';
+            if (createdAt) {
+                const messageDate = new Date(createdAt);
+                timestamp.textContent = messageDate.toLocaleTimeString([], {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+            } else {
+                timestamp.textContent = getCurrentTime();
+            }
+
+            headerDiv.appendChild(avatar);
+            headerDiv.appendChild(senderName);
+            headerDiv.appendChild(timestamp);
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
 
             if (sender === 'assistant') {
-                // Parse markdown for assistant messages
                 contentDiv.innerHTML = this.parseMarkdown(content);
-
-                // Apply syntax highlighting
                 contentDiv.querySelectorAll('pre code').forEach((block) => {
                     Prism.highlightElement(block);
                 });
             } else {
-                // Plain text for user messages
                 contentDiv.textContent = content;
             }
 
+            messageDiv.appendChild(headerDiv);
             messageDiv.appendChild(contentDiv);
             this.chatMessages.appendChild(messageDiv);
             this.scrollToBottom();
@@ -343,12 +698,11 @@
         showError(message) {
             const errorDiv = document.createElement('div');
             errorDiv.className = 'error-message';
-            errorDiv.textContent = message;
+            errorDiv.innerHTML = `<strong>Error:</strong> ${message}`;
 
             this.chatMessages.appendChild(errorDiv);
             this.scrollToBottom();
 
-            // Remove error after 5 seconds
             setTimeout(() => {
                 if (errorDiv.parentNode) {
                     errorDiv.parentNode.removeChild(errorDiv);
@@ -363,7 +717,7 @@
 
     // Initialize the chat when the page loads
     document.addEventListener('DOMContentLoaded', () => {
-        new AssistantChat();
+        new AssistantChatManager();
     });
 </script>
 {% endblock %}

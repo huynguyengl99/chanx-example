@@ -1,11 +1,15 @@
 from channels.routing import URLRouter
 
-from chanx.routing import path
+from chanx.routing import re_path
 
-from assistants.consumers import AssistantConsumer
+from assistants.consumers import (
+    ConversationAssistantConsumer,
+)
 
 router = URLRouter(
     [
-        path("", AssistantConsumer.as_asgi()),
+        # Both authenticated and anonymous users with specific conversation
+        # The consumer will determine if it's authenticated or anonymous based on user state
+        re_path(r"(?P<pk>[0-9a-f-]+)/", ConversationAssistantConsumer.as_asgi()),
     ]
 )

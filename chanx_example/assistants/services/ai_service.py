@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from typing import TypedDict
 
 from django.conf import settings
@@ -34,7 +34,7 @@ class OpenAIService:
             streaming=True,
         )
 
-    def _format_messages(
+    def format_messages(
         self, message: str, conversation_history: list[ConversationMessage]
     ) -> list[BaseMessage]:
         """Format conversation history into LangChain messages.
@@ -60,7 +60,7 @@ class OpenAIService:
 
         return messages
 
-    async def generate_stream(
+    async def agenerate_stream(
         self, message: str, conversation_history: list[ConversationMessage]
     ) -> AsyncIterator[str]:
         """Generate streaming response from OpenAI.
@@ -72,10 +72,30 @@ class OpenAIService:
         Yields:
             Tokens from the AI response
         """
-        messages = self._format_messages(message, conversation_history)
+        messages = self.format_messages(message, conversation_history)
 
         # Stream the response
         async for chunk in self.llm.astream(messages):
+            # Ensure we only yield strings, handle the content properly
+            if chunk.content and isinstance(chunk.content, str):
+                yield chunk.content
+
+    def generate_stream(
+        self, message: str, conversation_history: list[ConversationMessage]
+    ) -> Iterator[str]:
+        """Generate streaming response from OpenAI.
+
+        Args:
+            message: User message
+            conversation_history: Previous conversation messages
+
+        Yields:
+            Tokens from the AI response
+        """
+        messages = self.format_messages(message, conversation_history)
+
+        # Stream the response
+        for chunk in self.llm.stream(messages):
             # Ensure we only yield strings, handle the content properly
             if chunk.content and isinstance(chunk.content, str):
                 yield chunk.content

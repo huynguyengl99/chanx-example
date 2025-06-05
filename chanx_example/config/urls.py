@@ -32,6 +32,7 @@ from status.views import StatusView
 
 api_urlpatterns = [
     path("accounts/", include("accounts.urls")),
+    path("assistants/", include("assistants.urls")),
     path("chat/", include("chat.urls")),
     path("discussion/", include("discussion.urls")),
     path("playground/", include("chanx.playground.urls")),

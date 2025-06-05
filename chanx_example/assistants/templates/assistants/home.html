@@ -1,0 +1,324 @@
+{% extends "assistants/base.html" %}
+
+{% block title %}AI Assistant - Chanx Example{% endblock %}
+
+{% block content %}
+<!-- Sidebar Backdrop for Mobile -->
+<div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+{% if is_authenticated %}
+<!-- Sidebar for Authenticated Users -->
+<div class="sidebar" id="sidebar">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Conversations</h5>
+        <button id="newConversationBtn" class="btn btn-sm btn-primary">
+            <i class="bi bi-plus"></i> New
+        </button>
+    </div>
+    <div class="list-group list-group-flush" id="conversationsList">
+        {% for conv in conversations %}
+        <a href="{% url 'assistant_conversation' conv.id %}"
+           class="list-group-item list-group-item-action">
+            <div class="d-flex w-100 justify-content-between">
+                <h6 class="mb-1">{{ conv.title|default:"New Conversation" }}</h6>
+                <small class="text-muted">{{ conv.updated_at|timesince }} ago</small>
+            </div>
+            {% with last_message=conv.messages.last %}
+            {% if last_message %}
+            <p class="mb-1 small text-muted text-truncate">
+                {% if last_message.content|length > 100 %}
+                    {{ last_message.content|slice:":100" }}...
+                {% else %}
+                    {{ last_message.content }}
+                {% endif %}
+            </p>
+            {% endif %}
+            {% endwith %}
+        </a>
+        {% empty %}
+        <div class="list-group-item text-center text-muted">
+            <i class="bi bi-chat-left-text fs-4"></i>
+            <p class="mb-0 mt-2">No conversations yet</p>
+            <small>Start a new conversation to begin!</small>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- Sidebar Toggle Button -->
+<button class="sidebar-toggle" id="sidebarToggle">
+    <i class="bi bi-chevron-left" id="toggleIcon"></i>
+</button>
+{% endif %}
+
+<!-- Main Content Wrapper -->
+<div class="main-content-wrapper">
+    <div class="container py-4">
+        <!-- Welcome Content -->
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-robot fs-1 text-primary mb-3"></i>
+                <h1 class="mb-3">AI Assistant</h1>
+                <p class="lead mb-4">
+                    Get instant help from our AI assistant. Start a conversation to ask questions,
+                    get explanations, generate content, or brainstorm ideas.
+                </p>
+
+                {% if is_authenticated %}
+                <p class="mb-4 text-muted">
+                    Your conversations will be saved and you can access them anytime from the sidebar.
+                </p>
+                <button id="newConversationMainBtn" class="btn btn-primary btn-lg">
+                    <i class="bi bi-plus-circle"></i> Start New Conversation
+                </button>
+                {% else %}
+                <div class="mb-4">
+                    <div class="alert alert-info d-inline-block">
+                        <i class="bi bi-info-circle"></i>
+                        <strong>Anonymous mode:</strong> Your conversations won't be saved.
+                        <a href="{% url 'rest_login' %}?next={{ request.path }}">Log in</a> to save your chat history.
+                    </div>
+                </div>
+                <button id="newAnonymousConversationBtn" class="btn btn-primary btn-lg">
+                    <i class="bi bi-chat-left-text"></i> Start Anonymous Chat
+                </button>
+                {% endif %}
+
+                <div class="mt-5">
+                    <h5>What can I help you with?</h5>
+                    <div class="row mt-3">
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-question-circle fs-2 text-primary"></i>
+                                <h6 class="mt-2">Ask Questions</h6>
+                                <small class="text-muted">Get answers to any topic</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-code-slash fs-2 text-primary"></i>
+                                <h6 class="mt-2">Code Help</h6>
+                                <small class="text-muted">Debug, review, or write code</small>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="text-center p-3">
+                                <i class="bi bi-lightbulb fs-2 text-primary"></i>
+                                <h6 class="mt-2">Brainstorm</h6>
+                                <small class="text-muted">Generate ideas and solutions</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden data for JavaScript -->
+<script type="application/json" id="appData">
+{
+    "isAuthenticated": {% if is_authenticated %}true{% else %}false{% endif %},
+    "csrfToken": "{{ csrf_token }}"
+}
+</script>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+class AssistantHomeManager {
+    constructor() {
+        const appDataElement = document.getElementById('appData');
+        this.appData = appDataElement ? JSON.parse(appDataElement.textContent) : {};
+
+        this.initializeElements();
+        this.initializeSidebar();
+        this.attachEventListeners();
+    }
+
+    initializeElements() {
+        // Sidebar elements
+        this.sidebar = document.getElementById('sidebar');
+        this.sidebarToggle = document.getElementById('sidebarToggle');
+        this.toggleIcon = document.getElementById('toggleIcon');
+        this.backdrop = document.getElementById('sidebarBackdrop');
+
+        // Button elements
+        this.newConversationBtn = document.getElementById('newConversationBtn');
+        this.newConversationMainBtn = document.getElementById('newConversationMainBtn');
+        this.newAnonymousConversationBtn = document.getElementById('newAnonymousConversationBtn');
+    }
+
+    initializeSidebar() {
+        if (!this.appData.isAuthenticated || !this.sidebar) return;
+
+        this.isCollapsed = false;
+        this.updateSidebarForScreenSize();
+
+        // Restore saved state on desktop
+        const savedState = localStorage.getItem('sidebarCollapsed');
+        if (savedState === 'true' && window.innerWidth > 768) {
+            this.collapseSidebar();
+        }
+    }
+
+    attachEventListeners() {
+        // Sidebar events
+        if (this.sidebarToggle && this.appData.isAuthenticated) {
+            this.sidebarToggle.addEventListener('click', () => {
+                this.toggleSidebar();
+            });
+        }
+
+        if (this.backdrop && this.appData.isAuthenticated) {
+            this.backdrop.addEventListener('click', () => {
+                this.collapseSidebar();
+            });
+        }
+
+        // Window resize
+        window.addEventListener('resize', () => {
+            if (this.appData.isAuthenticated) {
+                this.updateSidebarForScreenSize();
+            }
+        });
+
+        // Handle conversation navigation on mobile
+        const conversationLinks = document.querySelectorAll('.list-group-item-action');
+        conversationLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 768) {
+                    this.collapseSidebar();
+                }
+            });
+        });
+
+        // Handle authenticated user new conversation buttons
+        if (this.newConversationBtn || this.newConversationMainBtn) {
+            const handleNewConversation = async () => {
+                try {
+                    const response = await fetch('/api/assistants/conversations/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.appData.csrfToken
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to create conversation');
+                    }
+
+                    const conversation = await response.json();
+                    window.location.href = `/assistants/${conversation.id}/`;
+                } catch (error) {
+                    console.error('Error creating conversation:', error);
+                    alert('Failed to create new conversation');
+                }
+            };
+
+            if (this.newConversationBtn) {
+                this.newConversationBtn.addEventListener('click', handleNewConversation);
+            }
+            if (this.newConversationMainBtn) {
+                this.newConversationMainBtn.addEventListener('click', handleNewConversation);
+            }
+        }
+
+        // Handle anonymous user new conversation
+        if (this.newAnonymousConversationBtn) {
+            this.newAnonymousConversationBtn.addEventListener('click', async () => {
+                try {
+                    const response = await fetch('/api/assistants/anonymous/', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': this.appData.csrfToken
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to create anonymous conversation');
+                    }
+
+                    const conversation = await response.json();
+                    window.location.href = `/assistants/${conversation.id}/`;
+                } catch (error) {
+                    console.error('Error creating anonymous conversation:', error);
+                    alert('Failed to create anonymous conversation');
+                }
+            });
+        }
+    }
+
+    // Sidebar management
+    toggleSidebar() {
+        if (this.isCollapsed) {
+            this.expandSidebar();
+        } else {
+            this.collapseSidebar();
+        }
+    }
+
+    collapseSidebar() {
+        if (!this.sidebar) return;
+
+        this.sidebar.classList.add('collapsed');
+        if (this.toggleIcon) {
+            this.toggleIcon.className = 'bi bi-chevron-right';
+        }
+        if (this.backdrop) {
+            this.backdrop.classList.remove('show');
+        }
+        this.isCollapsed = true;
+
+        if (window.innerWidth > 768) {
+            localStorage.setItem('sidebarCollapsed', 'true');
+        }
+    }
+
+    expandSidebar() {
+        if (!this.sidebar) return;
+
+        this.sidebar.classList.remove('collapsed');
+        if (this.toggleIcon) {
+            this.toggleIcon.className = 'bi bi-chevron-left';
+        }
+
+        if (window.innerWidth <= 768 && this.backdrop) {
+            this.backdrop.classList.add('show');
+        }
+
+        this.isCollapsed = false;
+
+        if (window.innerWidth > 768) {
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
+    }
+
+    updateSidebarForScreenSize() {
+        if (window.innerWidth <= 768) {
+            this.collapseSidebar();
+        } else {
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true') {
+                this.collapseSidebar();
+            } else {
+                this.expandSidebar();
+            }
+            if (this.backdrop) {
+                this.backdrop.classList.remove('show');
+            }
+        }
+    }
+}
+
+// Initialize when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+    new AssistantHomeManager();
+});
+</script>
+{% endblock %}
