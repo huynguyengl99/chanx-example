@@ -30,3 +30,9 @@ class CreateAssistantMessageSerializer(serializers.ModelSerializer[AssistantMess
     class Meta:
         model = AssistantMessage
         fields = ["content"]
+
+    def validate_content(self, value: str) -> str:
+        """Validate that content is not empty or whitespace only."""
+        if not value or not value.strip():
+            raise serializers.ValidationError("Message content cannot be empty.")
+        return value.strip()

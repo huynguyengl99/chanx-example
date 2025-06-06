@@ -25,7 +25,7 @@ class AssistantMessage(models.Model):
     )
     content = models.TextField[str, str]()
     message_type = models.CharField[str, str](
-        max_length=10, choices=MessageType.choices
+        max_length=10, choices=MessageType.choices, default=MessageType.USER
     )
     created_at = models.DateTimeField[datetime, datetime](auto_now_add=True)
 

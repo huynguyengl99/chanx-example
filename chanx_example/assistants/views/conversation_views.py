@@ -2,6 +2,7 @@ from typing import cast
 
 from django.db.models import QuerySet
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.serializers import BaseSerializer
 from rest_framework.viewsets import ModelViewSet
 
 from assistants.models import AssistantConversation
@@ -21,3 +22,8 @@ class AssistantConversationViewSet(ModelViewSet[AssistantConversation]):
         return AssistantConversation.objects.filter(user=request.user).order_by(
             "-updated_at"
         )
+
+    def perform_create(self, serializer: BaseSerializer[AssistantConversation]) -> None:
+        """Create conversation."""
+
+        serializer.save(user=self.request.user)
