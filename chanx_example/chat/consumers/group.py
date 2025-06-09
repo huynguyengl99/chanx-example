@@ -18,14 +18,11 @@ from chat.messages.group import (
     NotifyRemovedFromGroupEvent,
     RemovedFromGroupMessage,
 )
-from chat.messages.member import OutgoingMemberMessage
 from chat.models import GroupChat
 from chat.utils import make_user_groups_layer_name
 
 
-class GroupChatConsumer(
-    AsyncJsonWebsocketConsumer[GroupChatMessage, GroupChatEvent, OutgoingMemberMessage]
-):
+class GroupChatConsumer(AsyncJsonWebsocketConsumer[GroupChatMessage, GroupChatEvent]):
     """
     WebSocket consumer for group chat updates.
 

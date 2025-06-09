@@ -20,13 +20,12 @@ from discussion.messages.topic_list_messages import (
     NewTopicEvent,
     TopicCreatedMessage,
     TopicListEvent,
-    TopicListGroupMessage,
     TopicListMessage,
 )
 
 
 class DiscussionListConsumer(
-    AsyncJsonWebsocketConsumer[TopicListMessage, TopicListEvent, TopicListGroupMessage]
+    AsyncJsonWebsocketConsumer[TopicListMessage, TopicListEvent]
 ):
     """
     WebSocket consumer for discussion topic list view.

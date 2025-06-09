@@ -68,4 +68,3 @@ class ErrorEvent(BaseChannelEvent):
 # Union types
 AssistantIncomingMessage = PingMessage
 AssistantEvent = StreamingEvent | NewAssistantMessageEvent | ErrorEvent
-AssistantGroupMessage = StreamingMessage | NewAssistantMessage | ErrorMessage

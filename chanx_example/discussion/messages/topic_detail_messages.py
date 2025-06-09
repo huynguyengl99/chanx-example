@@ -5,7 +5,6 @@ from pydantic import BaseModel
 
 from .common_messages import (
     CommonIncomingMessage,
-    VoteUpdatedMessage,
     VoteUpdateEvent,
 )
 
@@ -89,15 +88,6 @@ class AnswerUnacceptedEvent(BaseChannelEvent):
 
 # Union of all incoming messages for topic detail view
 TopicDetailMessage = CommonIncomingMessage
-
-
-# Union of all outgoing group messages for topic detail view
-TopicDetailGroupMessage = (
-    ReplyCreatedMessage
-    | AnswerAcceptedMessage
-    | AnswerUnacceptedMessage
-    | VoteUpdatedMessage
-)
 
 
 # Union of all channel events for topic detail view

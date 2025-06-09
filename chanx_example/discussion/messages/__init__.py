@@ -12,7 +12,6 @@ from .topic_detail_messages import (
     NewReplyEvent,
     ReplyCreatedMessage,
     TopicDetailEvent,
-    TopicDetailGroupMessage,
     TopicDetailMessage,
 )
 from .topic_list_messages import (
@@ -21,7 +20,6 @@ from .topic_list_messages import (
     NewTopicPayload,
     TopicCreatedMessage,
     TopicListEvent,
-    TopicListGroupMessage,
     TopicListMessage,
 )
 
@@ -37,7 +35,6 @@ __all__ = [
     "NewTopicPayload",
     "TopicCreatedMessage",
     "TopicListEvent",
-    "TopicListGroupMessage",
     "TopicListMessage",
     # Topic detail messages
     "AnswerAcceptedEvent",
@@ -47,6 +44,5 @@ __all__ = [
     "NewReplyEvent",
     "ReplyCreatedMessage",
     "TopicDetailEvent",
-    "TopicDetailGroupMessage",
     "TopicDetailMessage",
 ]

@@ -18,16 +18,13 @@ from discussion.messages.topic_detail_messages import (
     NewReplyEvent,
     ReplyCreatedMessage,
     TopicDetailEvent,
-    TopicDetailGroupMessage,
     TopicDetailMessage,
 )
 from discussion.models import DiscussionTopic
 
 
 class DiscussionTopicConsumer(
-    AsyncJsonWebsocketConsumer[
-        TopicDetailMessage, TopicDetailEvent, TopicDetailGroupMessage, DiscussionTopic
-    ]
+    AsyncJsonWebsocketConsumer[TopicDetailMessage, TopicDetailEvent, DiscussionTopic]
 ):
     """
     WebSocket consumer for discussion topic detail view.

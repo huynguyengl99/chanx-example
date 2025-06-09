@@ -7,7 +7,6 @@ from chanx.messages.outgoing import PongMessage
 from accounts.models import User
 from assistants.messages.assistant import (
     AssistantEvent,
-    AssistantGroupMessage,
     AssistantIncomingMessage,
     ErrorEvent,
     ErrorMessage,
@@ -24,7 +23,6 @@ class ConversationAssistantConsumer(
     AsyncJsonWebsocketConsumer[
         AssistantIncomingMessage,
         AssistantEvent,
-        AssistantGroupMessage,
         AssistantConversation,
     ]
 ):

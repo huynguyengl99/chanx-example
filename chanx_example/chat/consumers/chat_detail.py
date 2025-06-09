@@ -17,16 +17,14 @@ from chat.messages.chat import (
     NotifyMemberRemovedEvent,
     UserRemovedFromGroupMessage,
 )
-from chat.messages.member import MemberMessage, OutgoingMemberMessage
+from chat.messages.member import MemberMessage
 from chat.models import ChatMember, GroupChat
 from chat.permissions import IsGroupChatMember
 from chat.utils import name_group_chat
 
 
 class ChatDetailConsumer(
-    AsyncJsonWebsocketConsumer[
-        ChatIncomingMessage, ChatDetailEvent, OutgoingMemberMessage, GroupChat
-    ]
+    AsyncJsonWebsocketConsumer[ChatIncomingMessage, ChatDetailEvent, GroupChat]
 ):
     """WebSocket consumer for group chat details."""
 

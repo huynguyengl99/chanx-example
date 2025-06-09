@@ -3,7 +3,7 @@ from typing import Any, Literal
 from chanx.messages.base import BaseChannelEvent, BaseGroupMessage, BaseMessage
 from pydantic import BaseModel
 
-from .common_messages import CommonIncomingMessage, VoteUpdatedMessage, VoteUpdateEvent
+from .common_messages import CommonIncomingMessage, VoteUpdateEvent
 from .topic_detail_messages import AnswerAcceptedEvent, AnswerUnacceptedEvent
 
 
@@ -55,10 +55,6 @@ class NewTopicEvent(BaseChannelEvent):
 
 # Union of all incoming messages for topic list view
 TopicListMessage = CommonIncomingMessage
-
-
-# Union of all outgoing group messages for topic list view
-TopicListGroupMessage = TopicCreatedMessage | VoteUpdatedMessage
 
 
 # Union of all channel events for topic list view
