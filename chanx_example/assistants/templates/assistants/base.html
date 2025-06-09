@@ -126,15 +126,21 @@
         padding: 16px 20px;
         border-radius: 12px;
         word-wrap: break-word;
-        animation: fadeIn 0.3s ease-in;
+        animation: messageSlideIn 0.3s ease-out;
         display: flex;
         flex-direction: column;
         align-items: flex-start;
     }
 
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
+    @keyframes messageSlideIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* User Messages */
@@ -152,25 +158,93 @@
         position: relative;
     }
 
+    /* Enhanced streaming message styling */
     .message.assistant.streaming {
-        background: #fff3e0;
-        border-left-color: #ff9800;
-        border: 1px solid #ffcc02;
+        background: #fff3e0 !important;
+        border-left-color: #ff9800 !important;
+        border: 1px solid #ffcc02 !important;
+        position: relative;
     }
 
-    .message.assistant .typing-indicator {
-        display: inline-block;
+    .message.assistant.streaming::after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        right: 10px;
         width: 8px;
         height: 8px;
         background: #ff9800;
         border-radius: 50%;
-        animation: pulse 1.5s ease-in-out infinite;
-        margin-left: 4px;
+        animation: streamingPulse 1.5s ease-in-out infinite;
     }
 
-    @keyframes pulse {
-        0%, 100% { opacity: 0.3; }
-        50% { opacity: 1; }
+    @keyframes streamingPulse {
+        0%, 100% {
+            opacity: 0.3;
+            transform: scale(1);
+        }
+        50% {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+    }
+
+    /* Enhanced typing indicator */
+    .typing-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-left: 8px;
+    }
+
+    .typing-indicator span {
+        width: 6px;
+        height: 6px;
+        background: #ff9800;
+        border-radius: 50%;
+        animation: typingBounce 1.4s ease-in-out infinite both;
+    }
+
+    .typing-indicator span:nth-child(1) {
+        animation-delay: -0.32s;
+    }
+
+    .typing-indicator span:nth-child(2) {
+        animation-delay: -0.16s;
+    }
+
+    .typing-indicator span:nth-child(3) {
+        animation-delay: 0s;
+    }
+
+    @keyframes typingBounce {
+        0%, 80%, 100% {
+            transform: scale(0);
+            opacity: 0.5;
+        }
+        40% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+
+    /* Streaming cursor animation */
+    .streaming-cursor {
+        display: inline-block;
+        width: 2px;
+        height: 1em;
+        background: #ff9800;
+        margin-left: 2px;
+        animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+        0%, 50% {
+            opacity: 1;
+        }
+        51%, 100% {
+            opacity: 0;
+        }
     }
 
     /* Message Headers */
@@ -223,6 +297,9 @@
     .message-content {
         line-height: 1.6;
         width: 100%;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+        hyphens: auto;
     }
 
     .message-content h1, .message-content h2, .message-content h3,
@@ -271,6 +348,9 @@
         margin: 12px 0;
         overflow-x: auto;
         position: relative;
+        white-space: pre;
+        word-wrap: normal;
+        overflow-wrap: normal;
     }
 
     .message-content pre code {
@@ -278,9 +358,12 @@
         padding: 0;
         border-radius: 0;
         font-size: 0.9em;
+        white-space: pre;
+        word-break: normal;
+        overflow-wrap: normal;
     }
 
-    /* Code Block Headers */
+    /* Enhanced code block styling */
     .code-header {
         display: flex;
         justify-content: space-between;
@@ -292,6 +375,7 @@
         padding: 8px 16px;
         font-size: 0.8em;
         color: #666;
+        font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
     }
 
     .copy-button {
@@ -303,6 +387,7 @@
         font-size: 0.8em;
         cursor: pointer;
         transition: background-color 0.2s;
+        font-family: inherit;
     }
 
     .copy-button:hover {
@@ -311,59 +396,6 @@
 
     .copy-button.copied {
         background: #4caf50;
-    }
-
-    /* Syntax Highlighting */
-    .message-content .token.comment,
-    .message-content .token.prolog,
-    .message-content .token.doctype,
-    .message-content .token.cdata {
-        color: #708090;
-    }
-
-    .message-content .token.punctuation {
-        color: #999;
-    }
-
-    .message-content .token.property,
-    .message-content .token.tag,
-    .message-content .token.constant,
-    .message-content .token.symbol,
-    .message-content .token.deleted {
-        color: #e74c3c;
-    }
-
-    .message-content .token.boolean,
-    .message-content .token.number {
-        color: #ae81ff;
-    }
-
-    .message-content .token.selector,
-    .message-content .token.attr-name,
-    .message-content .token.string,
-    .message-content .token.char,
-    .message-content .token.builtin,
-    .message-content .token.inserted {
-        color: #27ae60;
-    }
-
-    .message-content .token.operator,
-    .message-content .token.entity,
-    .message-content .token.url,
-    .message-content .language-css .token.string,
-    .message-content .style .token.string {
-        color: #3498db;
-    }
-
-    .message-content .token.atrule,
-    .message-content .token.attr-value,
-    .message-content .token.keyword {
-        color: #8e44ad;
-    }
-
-    .message-content .token.function,
-    .message-content .token.class-name {
-        color: #f39c12;
     }
 
     /* Chat Input */
@@ -419,11 +451,29 @@
     }
 
     .send-button:disabled {
-        background: #ccc;
+        background: #ccc !important;
         cursor: not-allowed;
+        position: relative;
     }
 
-    /* Error Messages */
+    .send-button:disabled::after {
+        content: '';
+        position: absolute;
+        width: 16px;
+        height: 16px;
+        margin: auto;
+        border: 2px solid transparent;
+        border-top-color: #ffffff;
+        border-radius: 50%;
+        animation: spin 1s ease infinite;
+    }
+
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+
+    /* Enhanced error message styling */
     .error-message {
         width: 100%;
         background: #ffebee;
@@ -433,6 +483,7 @@
         padding: 16px 20px;
         border-radius: 12px;
         margin: 10px 0;
+        animation: messageSlideIn 0.3s ease-out;
     }
 
     /* Tables */
@@ -497,6 +548,69 @@
         .chat-messages {
             padding: 16px;
             gap: 12px;
+        }
+
+        .message.assistant.streaming::after {
+            top: 8px;
+            right: 8px;
+            width: 6px;
+            height: 6px;
+        }
+
+        .code-header {
+            padding: 6px 12px;
+            font-size: 0.75em;
+        }
+
+        .copy-button {
+            padding: 3px 6px;
+            font-size: 0.7em;
+        }
+
+        .typing-indicator span {
+            width: 4px;
+            height: 4px;
+        }
+
+        .streaming-cursor {
+            width: 1px;
+        }
+    }
+
+    /* Accessibility improvements */
+    @media (prefers-reduced-motion: reduce) {
+        .message.assistant.streaming::after,
+        .typing-indicator span,
+        .streaming-cursor,
+        .send-button:disabled::after {
+            animation: none;
+        }
+
+        .message.assistant.streaming::after {
+            opacity: 0.7;
+        }
+
+        .typing-indicator span {
+            opacity: 0.7;
+        }
+
+        .streaming-cursor {
+            opacity: 0.7;
+        }
+    }
+
+    /* High contrast mode support */
+    @media (prefers-contrast: high) {
+        .message.assistant.streaming {
+            border-width: 2px;
+        }
+
+        .typing-indicator span {
+            background: #000;
+        }
+
+        .streaming-cursor {
+            background: #000;
         }
     }
 </style>
