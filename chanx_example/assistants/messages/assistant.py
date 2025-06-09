@@ -9,7 +9,7 @@ from pydantic import BaseModel
 class StreamingPayload(BaseModel):
     content: str
     is_complete: bool = False
-    message_id: str
+    message_id: int
 
 
 class ErrorPayload(BaseModel):
@@ -26,6 +26,13 @@ class StreamingMessage(BaseGroupMessage):
     """Streaming message chunk from assistant."""
 
     action: Literal["streaming"] = "streaming"
+    payload: StreamingPayload
+
+
+class CompleteStreamingMessage(BaseGroupMessage):
+    """Streaming message chunk from assistant."""
+
+    action: Literal["complete_streaming"] = "complete_streaming"
     payload: StreamingPayload
 
 
@@ -51,6 +58,13 @@ class StreamingEvent(BaseChannelEvent):
     payload: StreamingPayload
 
 
+class CompleteStreamingEvent(BaseChannelEvent):
+    """Channel event for streaming chunks."""
+
+    handler: Literal["handle_complete_streaming"] = "handle_complete_streaming"
+    payload: StreamingPayload
+
+
 class NewAssistantMessageEvent(BaseChannelEvent):
     """Channel event for new assistant messages."""
 
@@ -67,4 +81,6 @@ class ErrorEvent(BaseChannelEvent):
 
 # Union types
 AssistantIncomingMessage = PingMessage
-AssistantEvent = StreamingEvent | NewAssistantMessageEvent | ErrorEvent
+AssistantEvent = (
+    StreamingEvent | CompleteStreamingEvent | NewAssistantMessageEvent | ErrorEvent
+)

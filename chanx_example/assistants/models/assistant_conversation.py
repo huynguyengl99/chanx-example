@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import QuerySet
 
+import structlog
 from django_stubs_ext.db.models import TypedModelMeta
 
 from assistants.constants import TRUNCATED_TITLE_LENGTH
@@ -13,6 +14,8 @@ from assistants.constants import TRUNCATED_TITLE_LENGTH
 if TYPE_CHECKING:  # pragma: no cover
     from accounts.models import User  # noqa: F401
     from assistants.models.assistant_message import AssistantMessage  # noqa: F401
+
+logger = structlog.getLogger(__name__)
 
 
 class AssistantConversation(models.Model):
@@ -41,11 +44,6 @@ class AssistantConversation(models.Model):
         user_info = f" ({self.user.email})" if self.user else " (anonymous)"
         return f"Conversation {self.id} - {self.title or 'Untitled'}{user_info}"
 
-    @property
-    def is_anonymous(self) -> bool:
-        """Check if this is an anonymous conversation."""
-        return self.user is None
-
     def generate_title_from_first_message(self) -> None:
         """Generate a title from the first user message if not already set."""
         if not self.title:
@@ -54,22 +52,23 @@ class AssistantConversation(models.Model):
             first_message = self.messages.filter(
                 message_type=AssistantMessage.MessageType.USER
             ).first()
-            if first_message:
-                # Use the AI-powered title generation task
-                from assistants.tasks.ai_service_tasks import (
-                    task_generate_conversation_title,
+
+            assert first_message is not None
+            from assistants.tasks.ai_service_tasks import (
+                task_generate_conversation_title,
+            )
+
+            try:
+                generated_title = task_generate_conversation_title(
+                    first_message.content
                 )
+                self.title = generated_title
+                self.save(update_fields=["title"])
 
-                try:
-                    generated_title = task_generate_conversation_title(
-                        first_message.content
-                    )
-                    self.title = generated_title
-                    self.save(update_fields=["title"])
-
-                except Exception:
-                    # Fallback to simple truncation
-                    self.title = first_message.content[:TRUNCATED_TITLE_LENGTH]
-                    if len(first_message.content) > TRUNCATED_TITLE_LENGTH:
-                        self.title += "..."
-                    self.save(update_fields=["title"])
+            except Exception:
+                # Fallback to simple truncation
+                logger.exception("Failed to generate title")
+                self.title = first_message.content[:TRUNCATED_TITLE_LENGTH]
+                if len(first_message.content) > TRUNCATED_TITLE_LENGTH:
+                    self.title += "..."
+                self.save(update_fields=["title"])

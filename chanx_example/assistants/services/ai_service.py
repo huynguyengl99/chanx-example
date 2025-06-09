@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator, Iterator
+from collections.abc import Iterator
 from typing import TypedDict
 
 from django.conf import settings
@@ -52,33 +52,13 @@ class OpenAIService:
         for msg in conversation_history:
             if msg.get("role") == "user":
                 messages.append(HumanMessage(content=msg["content"]))
-            elif msg.get("role") == "assistant":
+            else:
                 messages.append(AIMessage(content=msg["content"]))
 
         # Add current message
         messages.append(HumanMessage(content=message))
 
         return messages
-
-    async def agenerate_stream(
-        self, message: str, conversation_history: list[ConversationMessage]
-    ) -> AsyncIterator[str]:
-        """Generate streaming response from OpenAI.
-
-        Args:
-            message: User message
-            conversation_history: Previous conversation messages
-
-        Yields:
-            Tokens from the AI response
-        """
-        messages = self.format_messages(message, conversation_history)
-
-        # Stream the response
-        async for chunk in self.llm.astream(messages):
-            # Ensure we only yield strings, handle the content properly
-            if chunk.content and isinstance(chunk.content, str):
-                yield chunk.content
 
     def generate_stream(
         self, message: str, conversation_history: list[ConversationMessage]
@@ -96,6 +76,4 @@ class OpenAIService:
 
         # Stream the response
         for chunk in self.llm.stream(messages):
-            # Ensure we only yield strings, handle the content properly
-            if chunk.content and isinstance(chunk.content, str):
-                yield chunk.content
+            yield chunk.text()

@@ -8,6 +8,8 @@ from accounts.models import User
 from assistants.messages.assistant import (
     AssistantEvent,
     AssistantIncomingMessage,
+    CompleteStreamingEvent,
+    CompleteStreamingMessage,
     ErrorEvent,
     ErrorMessage,
     NewAssistantMessage,
@@ -32,6 +34,8 @@ class ConversationAssistantConsumer(
     user: User | None
     conversation: AssistantConversation | None
     queryset = AssistantConversation.objects.all()
+
+    log_ignored_actions = ["streaming"]
 
     async def build_groups(self) -> list[str]:
         """Build groups based on conversation type (authenticated or anonymous)."""
@@ -58,6 +62,8 @@ class ConversationAssistantConsumer(
         match event:
             case StreamingEvent(payload=payload):
                 await self.send_message(StreamingMessage(payload=payload))
+            case CompleteStreamingEvent(payload=payload):
+                await self.send_message(CompleteStreamingMessage(payload=payload))
             case NewAssistantMessageEvent(payload=payload):
                 await self.send_message(NewAssistantMessage(payload=payload))
             case ErrorEvent(payload=payload):

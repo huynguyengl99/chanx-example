@@ -6,6 +6,7 @@ from channels.layers import get_channel_layer
 
 from assistants.consumers import ConversationAssistantConsumer
 from assistants.messages.assistant import (
+    CompleteStreamingEvent,
     NewAssistantMessageEvent,
     StreamingEvent,
     StreamingPayload,
@@ -25,7 +26,7 @@ class StreamingContext:
     user_content: str
     history: list[ConversationMessage]
     channel_name: str
-    message_id: str
+    message_id: int
 
 
 def _get_conversation_history(
@@ -44,15 +45,12 @@ def _get_conversation_history(
 
 def get_channel_name(conversation: AssistantConversation) -> str:
     conversation_id = conversation.pk
-    # Determine if this is an authenticated or anonymous conversation
-    is_anonymous = conversation.user is None
     # Build channel name based on conversation type
-    if is_anonymous:
+    if conversation.user is None:
         channel_name = f"anonymous_{conversation_id}"
     else:
-        user_id = conversation.user.pk if conversation.user else None
-        if user_id is None:
-            raise ValueError("User ID cannot be None for authenticated conversation")
+        user_id = conversation.user.pk
+        assert user_id is not None
         channel_name = f"user_{user_id}_conversation_{conversation_id}"
     return channel_name
 
@@ -86,7 +84,7 @@ def task_handle_new_assistant_message(user_message_id: int) -> None:
         user_content=user_message.content,
         history=formatted_history,
         channel_name=channel_name,
-        message_id=str(user_message_id),
+        message_id=user_message_id,
     )
 
     # Generate and stream AI response
@@ -129,7 +127,7 @@ def _generate_streaming_response(context: StreamingContext) -> str:
     # Send completion signal
     ConversationAssistantConsumer.send_channel_event(
         context.channel_name,
-        StreamingEvent(
+        CompleteStreamingEvent(
             payload=StreamingPayload(
                 content="",
                 is_complete=True,

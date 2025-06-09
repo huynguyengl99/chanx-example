@@ -1,5 +1,5 @@
 import re
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
 from datetime import datetime
 from typing import Any
 
@@ -109,6 +109,26 @@ class MockStreamingCompletion:
         return self
 
     async def __aexit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
+        pass
+
+    def __iter__(self) -> Iterator[ChatCompletionChunk]:
+        return self
+
+    def __next__(self) -> ChatCompletionChunk:
+        if not hasattr(self, "_index"):
+            self._index = 0
+
+        if self._index >= len(self.streaming_choices):
+            raise StopIteration
+
+        choice = self.streaming_choices[self._index]
+        self._index += 1
+        return ChatCompletionChunk(**self.chunk_kwargs, choices=[choice])
+
+    def __enter__(self) -> "MockStreamingCompletion":
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> None:
         pass
 
     def parse(self) -> "MockStreamingCompletion":

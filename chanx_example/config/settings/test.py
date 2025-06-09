@@ -15,3 +15,5 @@ CHANX = {
     "SEND_COMPLETION": True,
 }
 CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
+
+OPENAI_API_KEY = "Mock-key"
