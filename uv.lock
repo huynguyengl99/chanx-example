@@ -473,6 +473,7 @@ dependencies = [
     { name = "psycopg-pool" },
     { name = "redis", extra = ["hiredis"] },
     { name = "structlog" },
+    { name = "typing-extensions" },
     { name = "uvicorn", extra = ["standard"] },
     { name = "whitenoise" },
 ]
@@ -538,6 +539,7 @@ requires-dist = [
     { name = "psycopg-pool", specifier = ">=3.2.6,<4" },
     { name = "redis", extras = ["hiredis"], specifier = ">=5.2.1,<6" },
     { name = "structlog", specifier = ">=25.2.0,<26" },
+    { name = "typing-extensions", specifier = ">=4.13.2" },
     { name = "uvicorn", extras = ["standard"], specifier = ">=0.34.0,<1" },
     { name = "whitenoise", specifier = ">=6.9.0,<7" },
 ]

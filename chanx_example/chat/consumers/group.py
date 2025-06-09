@@ -1,4 +1,4 @@
-from typing import Any, assert_never
+from typing import Any
 
 from rest_framework.permissions import IsAuthenticated
 
@@ -6,6 +6,7 @@ from asgiref.sync import sync_to_async
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
+from typing_extensions import assert_never
 
 from accounts.models import User
 from chat.messages.group import (

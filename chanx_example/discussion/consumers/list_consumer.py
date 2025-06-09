@@ -1,10 +1,11 @@
-from typing import Any, assert_never
+from typing import Any
 
 from rest_framework.permissions import IsAuthenticated
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
+from typing_extensions import assert_never
 
 from discussion.messages.common_messages import (
     VoteUpdatedMessage,

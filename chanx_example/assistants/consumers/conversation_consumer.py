@@ -1,8 +1,9 @@
-from typing import Any, assert_never
+from typing import Any
 
 from chanx.generic.websocket import AsyncJsonWebsocketConsumer
 from chanx.messages.incoming import PingMessage
 from chanx.messages.outgoing import PongMessage
+from typing_extensions import assert_never
 
 from accounts.models import User
 from assistants.messages.assistant import (
