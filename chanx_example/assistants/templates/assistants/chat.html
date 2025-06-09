@@ -31,21 +31,21 @@
         {% for conv in conversations %}
         <a href="{% url 'assistant_conversation' conv.id %}"
            class="list-group-item list-group-item-action {% if conversation and conversation.id == conv.id %}active{% endif %}">
-            <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">{{ conv.title|default:"New Conversation" }}</h6>
-                <small class="text-muted">{{ conv.updated_at|timesince }} ago</small>
-            </div>
-            {% with last_message=conv.messages.last %}
-            {% if last_message %}
-            <p class="mb-1 small text-muted text-truncate">
-                {% if last_message.content|length > 100 %}
-                    {{ last_message.content|slice:":100" }}...
-                {% else %}
-                    {{ last_message.content }}
+            <div class="conversation-item">
+                <h6 class="conversation-title">{{ conv.title|default:"New Conversation" }}</h6>
+                <small class="conversation-timestamp text-muted">{{ conv.updated_at|timesince }} ago</small>
+                {% with last_message=conv.messages.last %}
+                {% if last_message %}
+                <p class="conversation-preview small text-muted">
+                    {% if last_message.content|length > 100 %}
+                        {{ last_message.content|slice:":100" }}...
+                    {% else %}
+                        {{ last_message.content }}
+                    {% endif %}
+                </p>
                 {% endif %}
-            </p>
-            {% endif %}
-            {% endwith %}
+                {% endwith %}
+            </div>
         </a>
         {% empty %}
         <div class="list-group-item text-center text-muted">

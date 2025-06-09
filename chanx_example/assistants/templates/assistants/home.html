@@ -19,21 +19,21 @@
         {% for conv in conversations %}
         <a href="{% url 'assistant_conversation' conv.id %}"
            class="list-group-item list-group-item-action">
-            <div class="d-flex w-100 justify-content-between">
-                <h6 class="mb-1">{{ conv.title|default:"New Conversation" }}</h6>
-                <small class="text-muted">{{ conv.updated_at|timesince }} ago</small>
-            </div>
-            {% with last_message=conv.messages.last %}
-            {% if last_message %}
-            <p class="mb-1 small text-muted text-truncate">
-                {% if last_message.content|length > 100 %}
-                    {{ last_message.content|slice:":100" }}...
-                {% else %}
-                    {{ last_message.content }}
+            <div class="conversation-item">
+                <h6 class="conversation-title">{{ conv.title|default:"New Conversation" }}</h6>
+                <small class="conversation-timestamp text-muted">{{ conv.updated_at|timesince }} ago</small>
+                {% with last_message=conv.messages.last %}
+                {% if last_message %}
+                <p class="conversation-preview small text-muted">
+                    {% if last_message.content|length > 100 %}
+                        {{ last_message.content|slice:":100" }}...
+                    {% else %}
+                        {{ last_message.content }}
+                    {% endif %}
+                </p>
                 {% endif %}
-            </p>
-            {% endif %}
-            {% endwith %}
+                {% endwith %}
+            </div>
         </a>
         {% empty %}
         <div class="list-group-item text-center text-muted">
@@ -69,49 +69,71 @@
                     Your conversations will be saved and you can access them anytime from the sidebar.
                 </p>
                 <button id="newConversationMainBtn" class="btn btn-primary btn-lg">
-                    <i class="bi bi-plus-circle"></i> Start New Conversation
+                    <i class="bi bi-plus-circle me-2"></i>Start New Conversation
                 </button>
                 {% else %}
-                <div class="mb-4">
-                    <div class="alert alert-info d-inline-block">
-                        <i class="bi bi-info-circle"></i>
-                        <strong>Anonymous mode:</strong> Your conversations won't be saved.
-                        <a href="{% url 'rest_login' %}?next={{ request.path }}">Log in</a> to save your chat history.
+                <p class="mb-4 text-muted">
+                    Start an anonymous conversation or
+                    <a href="{% url 'rest_login' %}?next={{ request.path }}">log in</a>
+                    to save your chat history.
+                </p>
+                <a href="#" id="newAnonymousConversationBtn" class="btn btn-primary btn-lg me-3">
+                    <i class="bi bi-chat-dots me-2"></i>Start Anonymous Chat
+                </a>
+                <a href="{% url 'rest_login' %}?next={{ request.path }}" class="btn btn-outline-primary btn-lg">
+                    <i class="bi bi-person-plus me-2"></i>Login to Save Chats
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        {% if is_authenticated %}
+        <!-- Features Section for Authenticated Users -->
+        <div class="row mt-4">
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="bi bi-chat-text fs-1 text-success"></i>
+                        </div>
+                        <h5 class="card-title text-center">Natural Conversations</h5>
+                        <p class="card-text">
+                            Have natural, flowing conversations with our AI assistant.
+                            Ask follow-up questions and build on previous topics.
+                        </p>
                     </div>
                 </div>
-                <button id="newAnonymousConversationBtn" class="btn btn-primary btn-lg">
-                    <i class="bi bi-chat-left-text"></i> Start Anonymous Chat
-                </button>
-                {% endif %}
-
-                <div class="mt-5">
-                    <h5>What can I help you with?</h5>
-                    <div class="row mt-3">
-                        <div class="col-md-4">
-                            <div class="text-center p-3">
-                                <i class="bi bi-question-circle fs-2 text-primary"></i>
-                                <h6 class="mt-2">Ask Questions</h6>
-                                <small class="text-muted">Get answers to any topic</small>
-                            </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="bi bi-code-slash fs-1 text-info"></i>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center p-3">
-                                <i class="bi bi-code-slash fs-2 text-primary"></i>
-                                <h6 class="mt-2">Code Help</h6>
-                                <small class="text-muted">Debug, review, or write code</small>
-                            </div>
+                        <h5 class="card-title text-center">Code Help</h5>
+                        <p class="card-text">
+                            Get assistance with programming, debugging, code reviews,
+                            and explanations with syntax highlighting.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <div class="text-center mb-3">
+                            <i class="bi bi-save fs-1 text-warning"></i>
                         </div>
-                        <div class="col-md-4">
-                            <div class="text-center p-3">
-                                <i class="bi bi-lightbulb fs-2 text-primary"></i>
-                                <h6 class="mt-2">Brainstorm</h6>
-                                <small class="text-muted">Generate ideas and solutions</small>
-                            </div>
-                        </div>
+                        <h5 class="card-title text-center">Saved History</h5>
+                        <p class="card-text">
+                            All your conversations are automatically saved and
+                            accessible from the sidebar for future reference.
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
@@ -119,39 +141,44 @@
 <script type="application/json" id="appData">
 {
     "isAuthenticated": {% if is_authenticated %}true{% else %}false{% endif %},
+    "conversationId": null,
+    "isAnonymous": false,
     "csrfToken": "{{ csrf_token }}"
 }
 </script>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
 <script>
 class AssistantHomeManager {
     constructor() {
+        // Get app data from template
         const appDataElement = document.getElementById('appData');
         this.appData = appDataElement ? JSON.parse(appDataElement.textContent) : {};
 
         this.initializeElements();
-        this.initializeSidebar();
+
+        if (this.appData.isAuthenticated) {
+            this.initializeSidebar();
+        }
+
         this.attachEventListeners();
     }
 
     initializeElements() {
+        this.newConversationBtn = document.getElementById('newConversationBtn');
+        this.newConversationMainBtn = document.getElementById('newConversationMainBtn');
+        this.newAnonymousConversationBtn = document.getElementById('newAnonymousConversationBtn');
+
         // Sidebar elements
         this.sidebar = document.getElementById('sidebar');
         this.sidebarToggle = document.getElementById('sidebarToggle');
         this.toggleIcon = document.getElementById('toggleIcon');
         this.backdrop = document.getElementById('sidebarBackdrop');
-
-        // Button elements
-        this.newConversationBtn = document.getElementById('newConversationBtn');
-        this.newConversationMainBtn = document.getElementById('newConversationMainBtn');
-        this.newAnonymousConversationBtn = document.getElementById('newAnonymousConversationBtn');
     }
 
     initializeSidebar() {
-        if (!this.appData.isAuthenticated || !this.sidebar) return;
+        if (!this.sidebar) return;
 
         this.isCollapsed = false;
         this.updateSidebarForScreenSize();
@@ -160,6 +187,67 @@ class AssistantHomeManager {
         const savedState = localStorage.getItem('sidebarCollapsed');
         if (savedState === 'true' && window.innerWidth > 768) {
             this.collapseSidebar();
+        }
+    }
+
+    // Sidebar management methods
+    toggleSidebar() {
+        if (this.isCollapsed) {
+            this.expandSidebar();
+        } else {
+            this.collapseSidebar();
+        }
+    }
+
+    collapseSidebar() {
+        if (!this.sidebar) return;
+
+        this.sidebar.classList.add('collapsed');
+        if (this.toggleIcon) {
+            this.toggleIcon.className = 'bi bi-chevron-right';
+        }
+        if (this.backdrop) {
+            this.backdrop.classList.remove('show');
+        }
+        this.isCollapsed = true;
+
+        if (window.innerWidth > 768) {
+            localStorage.setItem('sidebarCollapsed', 'true');
+        }
+    }
+
+    expandSidebar() {
+        if (!this.sidebar) return;
+
+        this.sidebar.classList.remove('collapsed');
+        if (this.toggleIcon) {
+            this.toggleIcon.className = 'bi bi-chevron-left';
+        }
+
+        if (window.innerWidth <= 768 && this.backdrop) {
+            this.backdrop.classList.add('show');
+        }
+
+        this.isCollapsed = false;
+
+        if (window.innerWidth > 768) {
+            localStorage.setItem('sidebarCollapsed', 'false');
+        }
+    }
+
+    updateSidebarForScreenSize() {
+        if (window.innerWidth <= 768) {
+            this.collapseSidebar();
+        } else {
+            const savedState = localStorage.getItem('sidebarCollapsed');
+            if (savedState === 'true') {
+                this.collapseSidebar();
+            } else {
+                this.expandSidebar();
+            }
+            if (this.backdrop) {
+                this.backdrop.classList.remove('show');
+            }
         }
     }
 
@@ -222,6 +310,7 @@ class AssistantHomeManager {
             if (this.newConversationBtn) {
                 this.newConversationBtn.addEventListener('click', handleNewConversation);
             }
+
             if (this.newConversationMainBtn) {
                 this.newConversationMainBtn.addEventListener('click', handleNewConversation);
             }
@@ -253,71 +342,10 @@ class AssistantHomeManager {
             });
         }
     }
-
-    // Sidebar management
-    toggleSidebar() {
-        if (this.isCollapsed) {
-            this.expandSidebar();
-        } else {
-            this.collapseSidebar();
-        }
-    }
-
-    collapseSidebar() {
-        if (!this.sidebar) return;
-
-        this.sidebar.classList.add('collapsed');
-        if (this.toggleIcon) {
-            this.toggleIcon.className = 'bi bi-chevron-right';
-        }
-        if (this.backdrop) {
-            this.backdrop.classList.remove('show');
-        }
-        this.isCollapsed = true;
-
-        if (window.innerWidth > 768) {
-            localStorage.setItem('sidebarCollapsed', 'true');
-        }
-    }
-
-    expandSidebar() {
-        if (!this.sidebar) return;
-
-        this.sidebar.classList.remove('collapsed');
-        if (this.toggleIcon) {
-            this.toggleIcon.className = 'bi bi-chevron-left';
-        }
-
-        if (window.innerWidth <= 768 && this.backdrop) {
-            this.backdrop.classList.add('show');
-        }
-
-        this.isCollapsed = false;
-
-        if (window.innerWidth > 768) {
-            localStorage.setItem('sidebarCollapsed', 'false');
-        }
-    }
-
-    updateSidebarForScreenSize() {
-        if (window.innerWidth <= 768) {
-            this.collapseSidebar();
-        } else {
-            const savedState = localStorage.getItem('sidebarCollapsed');
-            if (savedState === 'true') {
-                this.collapseSidebar();
-            } else {
-                this.expandSidebar();
-            }
-            if (this.backdrop) {
-                this.backdrop.classList.remove('show');
-            }
-        }
-    }
 }
 
 // Initialize when the page loads
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', () => {
     new AssistantHomeManager();
 });
 </script>
